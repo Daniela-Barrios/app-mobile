@@ -1,0 +1,4 @@
+mock-api/node_modules
+mock-api/db.json
+web/node_modules
+web/dist

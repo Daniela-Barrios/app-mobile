@@ -1,0 +1,15 @@
+{
+  "name": "control-acceso-mock-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mock REST ligero (json-server) para la maqueta del Dashboard de Control de Acceso — Fase 0. Sin reglas de negocio: viven en la capa de servicios del frontend.",
+  "type": "module",
+  "scripts": {
+    "seed": "node seed.js",
+    "start": "json-server --watch db.json --port 4000 --host 0.0.0.0",
+    "reset": "npm run seed && npm run start"
+  },
+  "dependencies": {
+    "json-server": "^0.17.4"
+  }
+}

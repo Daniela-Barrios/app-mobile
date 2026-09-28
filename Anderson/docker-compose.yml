@@ -1,0 +1,39 @@
+name: dashboard-control-acceso
+
+# Todo local, cero despliegues. Un solo comando levanta la maqueta:
+#   docker compose up --build
+# Reset del mock a la semilla:
+#   docker compose run --rm mock-api npm run seed
+
+services:
+  mock-api:
+    build: ./mock-api
+    ports:
+      - "4000:4000"
+    volumes:
+      # Bind mount: db.json vive en el filesystem del host (Anderson/mock-api/db.json)
+      # y persiste entre reinicios sin necesidad de un volumen nombrado aparte.
+      - ./mock-api:/app
+      - mock_api_node_modules:/app/node_modules
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/systemStatus"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    build: ./web
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_TARGET: http://mock-api:4000
+    depends_on:
+      mock-api:
+        condition: service_healthy
+    volumes:
+      - ./web:/app
+      - web_node_modules:/app/node_modules
+
+volumes:
+  mock_api_node_modules:
+  web_node_modules:
