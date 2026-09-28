@@ -1,10 +1,39 @@
 @import "tailwindcss";
 
+/*
+ * Tokens del sistema de diseño (ver docs/design-system.md), extraídos de las
+ * capturas de referencia (Vigilante Virtual). Se declaran aquí para poder
+ * usarse como utilidades normales de Tailwind: bg-brand-600, text-ink-900,
+ * border-border, etc. No usar hex sueltos en los componentes.
+ */
+@theme {
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #dfe6fd;
+  --color-brand-500: #4c6fef;
+  --color-brand-600: #3355e0;
+  --color-brand-700: #2846b8;
+
+  /* Escala de tinta (sidebar, texto de alto contraste, estados sobre fondo oscuro) */
+  --color-ink-900: #0b0f19;
+  --color-ink-800: #131a2a;
+  --color-ink-700: #374151;
+  --color-ink-400: #9aa3b2;
+
+  --color-surface: #ffffff;
+  --color-surface-muted: #f6f7fa;
+  --color-border: #e5e7eb;
+  --color-text-muted: #6b7280;
+
+  --color-success-500: #22c55e;
+  --color-warning-500: #f59e0b;
+  --color-danger-500: #ef4444;
+}
+
 :root {
   color-scheme: light;
 }
 
 body {
   margin: 0;
-  @apply bg-slate-50 text-slate-900 antialiased;
+  @apply bg-surface-muted text-ink-900 antialiased;
 }
