@@ -21,7 +21,9 @@ export function Layout() {
   const location = useLocation()
   const title = location.pathname.startsWith('/usuarios/')
     ? 'Detalle de usuario'
-    : (PAGE_TITLES[location.pathname] ?? 'Control de Acceso')
+    : location.pathname.startsWith('/biometria/')
+      ? 'Detalle biométrico'
+      : (PAGE_TITLES[location.pathname] ?? 'Control de Acceso')
 
   return (
     <div className="flex h-screen bg-surface-muted">

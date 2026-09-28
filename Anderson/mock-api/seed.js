@@ -34,6 +34,7 @@ const zones = [
 
 const COMPANIES = ['Bodegas Panamericana', 'Transportes del Valle', 'Logística Andina', null]
 const PHONE_PREFIXES = ['300', '301', '310', '311', '320']
+const BIOMETRIC_DEVICES = ['Lector USB-01', 'Cámara facial A2', 'Terminal biométrica T-100']
 
 const users = []
 const photos = []
@@ -108,8 +109,13 @@ for (let i = 0; i < USER_COUNT; i++) {
     userId,
     photoId,
     biometricRef: biometricPending ? null : `BIO-${String(userNum).padStart(4, '0')}`,
+    biometricType: userNum % 2 === 0 ? 'facial' : 'huella',
+    qualityScore: biometricPending ? null : 80 + (userNum % 18),
+    device: biometricPending ? null : BIOMETRIC_DEVICES[userNum % BIOMETRIC_DEVICES.length],
     status: biometricPending ? 'pendiente' : 'registrada',
     source: 'simulated',
+    blockedGlobally: false,
+    blockedZoneIds: [],
     deletedAt: null,
   })
   if (!biometricPending) {

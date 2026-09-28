@@ -30,8 +30,14 @@ export interface Biometric {
   userId: string
   photoId: string
   biometricRef: string | null
+  biometricType: 'huella' | 'facial'
+  qualityScore: number | null
+  device: string | null
   status: BiometricStatus
   source: 'simulated' | 'device'
+  /** Bloqueo de acceso administrado desde el monitoreo (no del sistema externo de tokens). */
+  blockedGlobally: boolean
+  blockedZoneIds: string[]
   deletedAt: string | null
 }
 

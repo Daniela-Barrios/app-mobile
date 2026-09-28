@@ -32,6 +32,8 @@ export const photosRepository = {
 export const biometricsRepository = {
   list: () => api.get<Biometric[]>('/biometrics'),
   listByUser: (userId: string) => api.get<Biometric[]>(`/biometrics?userId=${userId}`),
+  update: (id: string, patch: Partial<Biometric>) =>
+    api.patch<Biometric>(`/biometrics/${id}`, patch),
 }
 
 export const zonesRepository = {

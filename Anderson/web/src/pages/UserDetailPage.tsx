@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
+import { TONE_DOT_CLASS, describeEvent } from '../lib/describeEvent'
 import { useAsync } from '../hooks/useAsync'
 import {
   accessLogsRepository,
@@ -40,7 +41,7 @@ export function UserDetailPage() {
   if (error) return <p className="text-sm text-danger-500">Error: {error}</p>
   if (!data) return null
 
-  const { user, biometrics, accessLogs, zones, actions } = data
+  const { user, biometrics, accessLogs, tokens, zones, actions } = data
   const bio = biometrics[0]
   const zoneName = (id: string) => zones.find((z) => z.id === id)?.name ?? id
 
@@ -156,14 +157,23 @@ export function UserDetailPage() {
           <p className="text-sm text-text-muted">Sin actividad registrada.</p>
         ) : (
           <ul className="space-y-3">
-            {actions.slice(0, 10).map((event) => (
-              <li key={event.id} className="flex items-center justify-between border-b border-border pb-3 text-sm last:border-0 last:pb-0">
-                <span className="text-ink-900">{event.type}</span>
-                <span className="text-xs text-text-muted">
-                  {new Date(event.occurredAt).toLocaleString('es-CO')}
-                </span>
-              </li>
-            ))}
+            {actions.slice(0, 12).map((event) => {
+              const { label, detail, tone } = describeEvent(event, { zones, tokens })
+              return (
+                <li key={event.id} className="flex items-start gap-3 border-b border-border pb-3 last:border-0 last:pb-0">
+                  <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${TONE_DOT_CLASS[tone]}`} />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-medium text-ink-900">{label}</p>
+                      <span className="shrink-0 text-xs text-text-muted">
+                        {new Date(event.occurredAt).toLocaleString('es-CO')}
+                      </span>
+                    </div>
+                    <p className="text-xs text-text-muted">{detail}</p>
+                  </div>
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useAsync } from '../hooks/useAsync'
 import {
   accessLogsRepository,
@@ -9,19 +10,13 @@ import {
 } from '../repositories'
 import { ActivityIcon, FingerprintIcon, KeyIcon, UsersIcon } from '../components/icons'
 
-const toneDot: Record<string, string> = {
-  info: 'bg-brand-600',
-  warning: 'bg-warning-500',
-  danger: 'bg-danger-500',
-}
-
 async function loadDashboard() {
   const [users, tokens, biometrics, events, accessLogs, zones] = await Promise.all([
     usersRepository.list(),
     tokensRepository.list(),
     biometricsRepository.list(),
     eventsRepository.list(),
-    accessLogsRepository.list(),
+    accessLogsRepository.list(), // ya viene ordenado por occurredAt desc
     zonesRepository.list(),
   ])
   return { users, tokens, biometrics, events, accessLogs, zones }
@@ -52,7 +47,9 @@ export function DashboardPage() {
   }))
   const maxZoneCount = Math.max(1, ...zoneCounts.map((z) => z.count))
 
-  const recent = events.slice(0, 8)
+  const userName = (id: string) => users.find((u) => u.id === id)?.fullName ?? id
+  const tokenCode = (id: string) => tokens.find((t) => t.id === id)?.code ?? id
+  const recentAccess = accessLogs.slice(0, 8)
 
   return (
     <>
@@ -78,22 +75,37 @@ export function DashboardPage() {
               Simulado
             </span>
           </div>
-          {recent.length === 0 ? (
-            <p className="text-sm text-text-muted">Sin eventos todavía.</p>
+          {recentAccess.length === 0 ? (
+            <p className="text-sm text-text-muted">Sin accesos todavía.</p>
           ) : (
-            <ul className="space-y-4">
-              {recent.map((event) => (
-                <li key={event.id} className="flex items-start gap-3">
-                  <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${toneDot[event.severity] ?? toneDot.info}`} />
-                  <div className="flex flex-1 items-center justify-between gap-3 border-b border-border pb-3 last:border-0 last:pb-0">
-                    <p className="text-sm text-ink-900">{event.type}</p>
-                    <span className="shrink-0 text-xs text-text-muted">
-                      {new Date(event.occurredAt).toLocaleTimeString('es-CO', {
+            <ul className="space-y-3">
+              {recentAccess.map((log) => (
+                <li
+                  key={log.id}
+                  className="flex items-center justify-between gap-3 border-b border-border pb-3 last:border-0 last:pb-0"
+                >
+                  <Link
+                    to={`/usuarios/${log.userId}`}
+                    className="min-w-0 text-sm text-ink-900 hover:text-brand-600"
+                  >
+                    <p className="truncate font-medium">{userName(log.userId)}</p>
+                    <p className="truncate text-xs text-text-muted">
+                      {tokenCode(log.tokenId)} ·{' '}
+                      {new Date(log.occurredAt).toLocaleTimeString('es-CO', {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
-                    </span>
-                  </div>
+                    </p>
+                  </Link>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                      log.result === 'autorizado'
+                        ? 'bg-success-500/10 text-success-500'
+                        : 'bg-danger-500/10 text-danger-500'
+                    }`}
+                  >
+                    {log.result === 'autorizado' ? 'Aprobado' : 'No aprobado'}
+                  </span>
                 </li>
               ))}
             </ul>
