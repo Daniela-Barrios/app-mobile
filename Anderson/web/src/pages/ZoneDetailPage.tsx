@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
 import { useAsync } from '../hooks/useAsync'
+import { useSetBreadcrumbLabel } from '../lib/breadcrumbContext'
 import { elapsedSince, isSameDay } from '../lib/time'
 import { accessLogsRepository, usersRepository, zonesRepository } from '../repositories'
 import { usersPresentInZone } from './ZonesPage'
@@ -18,6 +19,7 @@ async function loadZoneDetail(zoneId: string) {
 export function ZoneDetailPage() {
   const { zoneId } = useParams<{ zoneId: string }>()
   const { data, loading, error } = useAsync(() => loadZoneDetail(zoneId as string), [zoneId])
+  useSetBreadcrumbLabel(data?.zone?.name ?? null)
 
   if (loading) return <p className="text-sm text-text-muted">Cargando zona…</p>
   if (error) return <p className="text-sm text-danger-500">Error: {error}</p>

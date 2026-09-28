@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
+import { useSetBreadcrumbLabel } from '../lib/breadcrumbContext'
 import { TONE_DOT_CLASS, describeEvent } from '../lib/describeEvent'
 import { useAsync } from '../hooks/useAsync'
 import {
@@ -36,6 +37,7 @@ export function UserDetailPage() {
     () => loadUserDetail(userId as string),
     [userId],
   )
+  useSetBreadcrumbLabel(data?.user.fullName ?? null)
 
   if (loading) return <p className="text-sm text-text-muted">Cargando usuario…</p>
   if (error) return <p className="text-sm text-danger-500">Error: {error}</p>

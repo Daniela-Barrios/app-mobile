@@ -1,31 +1,28 @@
 import { useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
+import { Breadcrumbs } from './components/Breadcrumbs'
 import { Sidebar } from './components/Sidebar'
 import { Topbar } from './components/Topbar'
+import { useBreadcrumbLabel } from './lib/breadcrumbContext'
+import { ROUTE_LABELS } from './lib/routeLabels'
 
-const PAGE_TITLES: Record<string, string> = {
-  '/resumen': 'Resumen',
-  '/usuarios': 'Usuarios',
-  '/biometria': 'Biometría',
-  '/accesos': 'Accesos',
-  '/zonas': 'Zonas',
-  '/camaras': 'Cámaras',
-  '/eventos': 'Eventos / Auditoría',
-  '/vigilante': 'Vigilante virtual',
-  '/fase-a': 'Fase A (preparación)',
-  '/configuracion': 'Configuración',
+const DETAIL_FALLBACK_TITLES: Record<string, string> = {
+  '/usuarios/': 'Detalle de usuario',
+  '/biometria/': 'Detalle biométrico',
+  '/zonas/': 'Detalle de zona',
 }
 
 export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
-  const title = location.pathname.startsWith('/usuarios/')
-    ? 'Detalle de usuario'
-    : location.pathname.startsWith('/biometria/')
-      ? 'Detalle biométrico'
-      : location.pathname.startsWith('/zonas/')
-        ? 'Detalle de zona'
-        : (PAGE_TITLES[location.pathname] ?? 'Control de Acceso')
+  const dynamicLabel = useBreadcrumbLabel()
+
+  const detailPrefix = Object.keys(DETAIL_FALLBACK_TITLES).find((prefix) =>
+    location.pathname.startsWith(prefix),
+  )
+  const title = detailPrefix
+    ? (dynamicLabel ?? DETAIL_FALLBACK_TITLES[detailPrefix])
+    : (ROUTE_LABELS[location.pathname] ?? 'Control de Acceso')
 
   return (
     <div className="flex h-screen bg-surface-muted">
@@ -39,6 +36,7 @@ export function Layout() {
         />
 
         <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
+          <Breadcrumbs />
           <Outlet />
         </main>
       </div>

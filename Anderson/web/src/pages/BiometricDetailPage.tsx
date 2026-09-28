@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
+import { useSetBreadcrumbLabel } from '../lib/breadcrumbContext'
 import { useAsync } from '../hooks/useAsync'
 import { biometricsRepository, usersRepository, zonesRepository } from '../repositories'
 import {
@@ -26,6 +27,7 @@ export function BiometricDetailPage() {
   )
   const [selectedZones, setSelectedZones] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
+  useSetBreadcrumbLabel(data?.user.fullName ?? null)
 
   useEffect(() => {
     if (data?.biometric) setSelectedZones(data.biometric.blockedZoneIds)
