@@ -21,8 +21,11 @@ export const usersRepository = {
   list: () => api.get<User[]>('/users'),
   get: (id: string) => api.get<User>(`/users/${id}`),
   create: (user: User) => api.post<User>('/users', user),
+  update: (id: string, patch: Partial<User>) => api.patch<User>(`/users/${id}`, patch),
   softDelete: (id: string) =>
-    api.patch<User>(`/users/${id}`, { deletedAt: new Date().toISOString() }),
+    api.patch<User>(`/users/${id}`, { deletedAt: new Date().toISOString(), status: 'inactivo' }),
+  reactivate: (id: string) =>
+    api.patch<User>(`/users/${id}`, { deletedAt: null, status: 'activo' }),
 }
 
 export const photosRepository = {
@@ -38,6 +41,13 @@ export const biometricsRepository = {
 
 export const zonesRepository = {
   list: () => api.get<Zone[]>('/zones'),
+  get: (id: string) => api.get<Zone>(`/zones/${id}`),
+  create: (zone: Zone) => api.post<Zone>('/zones', zone),
+  update: (id: string, patch: Partial<Zone>) => api.patch<Zone>(`/zones/${id}`, patch),
+  softDelete: (id: string) =>
+    api.patch<Zone>(`/zones/${id}`, { deletedAt: new Date().toISOString(), active: false }),
+  reactivate: (id: string) =>
+    api.patch<Zone>(`/zones/${id}`, { deletedAt: null, active: true }),
 }
 
 export const tokensRepository = {
@@ -72,6 +82,14 @@ export const eventsRepository = {
 
 export const camerasRepository = {
   list: () => api.get<Camera[]>('/cameras'),
+  create: (camera: Camera) => api.post<Camera>('/cameras', camera),
+  update: (id: string, patch: Partial<Camera>) => api.patch<Camera>(`/cameras/${id}`, patch),
+  softDelete: (id: string) =>
+    api.patch<Camera>(`/cameras/${id}`, {
+      deletedAt: new Date().toISOString(),
+      status: 'desconectada' as const,
+    }),
+  reactivate: (id: string) => api.patch<Camera>(`/cameras/${id}`, { deletedAt: null }),
 }
 
 export const guardRequestsRepository = {

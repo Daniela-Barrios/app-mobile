@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
+import { ConfirmDialog } from '../components/ConfirmDialog'
+import { UserFormModal, type UserFormValues } from '../components/UserFormModal'
 import { useSetBreadcrumbLabel } from '../lib/breadcrumbContext'
 import { TONE_DOT_CLASS, describeEvent } from '../lib/describeEvent'
 import { useAsync } from '../hooks/useAsync'
@@ -11,6 +14,7 @@ import {
   usersRepository,
   zonesRepository,
 } from '../repositories'
+import { deactivateUser, reactivateUser, updateUser } from '../services/userService'
 
 async function loadUserDetail(userId: string) {
   const [user, biometrics, accessLogs, tokens, zones, events] = await Promise.all([
@@ -33,11 +37,14 @@ async function loadUserDetail(userId: string) {
 
 export function UserDetailPage() {
   const { userId } = useParams<{ userId: string }>()
-  const { data, loading, error } = useAsync(
+  const { data, loading, error, reload } = useAsync(
     () => loadUserDetail(userId as string),
     [userId],
   )
   useSetBreadcrumbLabel(data?.user.fullName ?? null)
+  const [editing, setEditing] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const [busy, setBusy] = useState(false)
 
   if (loading) return <p className="text-sm text-text-muted">Cargando usuario…</p>
   if (error) return <p className="text-sm text-danger-500">Error: {error}</p>
@@ -50,6 +57,29 @@ export function UserDetailPage() {
   const granted = accessLogs.filter((l) => l.result === 'autorizado').length
   const denied = accessLogs.filter((l) => l.result === 'rechazado').length
 
+  async function handleEdit(values: UserFormValues) {
+    setBusy(true)
+    try {
+      await updateUser(user.id, values)
+      setEditing(false)
+      reload()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleToggleActive() {
+    setBusy(true)
+    try {
+      if (user.deletedAt) await reactivateUser(user.id)
+      else await deactivateUser(user.id)
+      setConfirming(false)
+      reload()
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <Link to="/usuarios" className="text-xs font-medium text-brand-600 hover:underline">
@@ -59,16 +89,30 @@ export function UserDetailPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Ficha del usuario */}
         <div className="rounded-xl border border-border bg-surface p-5 lg:col-span-1">
-          <div className="flex items-center gap-4">
-            <Avatar name={user.fullName} size="lg" />
-            <div>
-              <p className="text-base font-semibold text-ink-900">{user.fullName}</p>
-              <p className="text-xs text-text-muted">{user.documentId}</p>
-              {user.deletedAt && (
-                <span className="mt-1 inline-block rounded-full bg-surface-muted px-2 py-0.5 text-[10px] text-text-muted">
-                  eliminado
-                </span>
-              )}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-4">
+              <Avatar name={user.fullName} size="lg" />
+              <div>
+                <p className="text-base font-semibold text-ink-900">{user.fullName}</p>
+                <p className="text-xs text-text-muted">{user.documentId}</p>
+                {user.deletedAt && (
+                  <span className="mt-1 inline-block rounded-full bg-surface-muted px-2 py-0.5 text-[10px] text-text-muted">
+                    eliminado
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-1.5 text-xs font-medium">
+              <button type="button" onClick={() => setEditing(true)} className="text-brand-600 hover:underline">
+                Editar
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirming(true)}
+                className={user.deletedAt ? 'text-brand-600 hover:underline' : 'text-danger-500 hover:underline'}
+              >
+                {user.deletedAt ? 'Reactivar' : 'Desactivar'}
+              </button>
             </div>
           </div>
 
@@ -179,6 +223,31 @@ export function UserDetailPage() {
           </ul>
         )}
       </div>
+
+      {editing && (
+        <UserFormModal
+          title="Editar usuario"
+          initial={user}
+          busy={busy}
+          onCancel={() => setEditing(false)}
+          onSubmit={handleEdit}
+        />
+      )}
+      {confirming && (
+        <ConfirmDialog
+          title={user.deletedAt ? 'Reactivar usuario' : 'Desactivar usuario'}
+          message={
+            user.deletedAt
+              ? `¿Reactivar a ${user.fullName}? Volverá a aparecer como usuario activo.`
+              : `¿Desactivar a ${user.fullName}? Es una baja lógica: queda marcado como eliminado, pero su historial se conserva.`
+          }
+          confirmLabel={user.deletedAt ? 'Reactivar' : 'Desactivar'}
+          danger={!user.deletedAt}
+          busy={busy}
+          onCancel={() => setConfirming(false)}
+          onConfirm={handleToggleActive}
+        />
+      )}
     </div>
   )
 }

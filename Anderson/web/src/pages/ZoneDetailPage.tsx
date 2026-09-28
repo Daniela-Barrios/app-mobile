@@ -1,9 +1,13 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
+import { ConfirmDialog } from '../components/ConfirmDialog'
+import { ZoneFormModal, type ZoneFormValues } from '../components/ZoneFormModal'
 import { useAsync } from '../hooks/useAsync'
 import { useSetBreadcrumbLabel } from '../lib/breadcrumbContext'
 import { elapsedSince, isSameDay } from '../lib/time'
 import { accessLogsRepository, usersRepository, zonesRepository } from '../repositories'
+import { deactivateZone, reactivateZone, updateZone } from '../services/zoneService'
 import { usersPresentInZone } from './ZonesPage'
 
 async function loadZoneDetail(zoneId: string) {
@@ -18,14 +22,40 @@ async function loadZoneDetail(zoneId: string) {
 
 export function ZoneDetailPage() {
   const { zoneId } = useParams<{ zoneId: string }>()
-  const { data, loading, error } = useAsync(() => loadZoneDetail(zoneId as string), [zoneId])
+  const { data, loading, error, reload } = useAsync(() => loadZoneDetail(zoneId as string), [zoneId])
   useSetBreadcrumbLabel(data?.zone?.name ?? null)
+  const [editing, setEditing] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const [busy, setBusy] = useState(false)
 
   if (loading) return <p className="text-sm text-text-muted">Cargando zona…</p>
   if (error) return <p className="text-sm text-danger-500">Error: {error}</p>
   if (!data || !data.zone) return <p className="text-sm text-danger-500">Zona no encontrada.</p>
 
   const { zone, accessLogs, users } = data
+
+  async function handleEdit(values: ZoneFormValues) {
+    setBusy(true)
+    try {
+      await updateZone(zone.id, values)
+      setEditing(false)
+      reload()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleToggleActive() {
+    setBusy(true)
+    try {
+      if (zone.deletedAt) await reactivateZone(zone.id)
+      else await deactivateZone(zone.id)
+      setConfirming(false)
+      reload()
+    } finally {
+      setBusy(false)
+    }
+  }
   const userName = (id: string) => users.find((u) => u.id === id)?.fullName ?? id
 
   // "Ahora mismo": el acceso más reciente de cada usuario, si fue autorizado en esta zona.
@@ -63,14 +93,35 @@ export function ZoneDetailPage() {
 
       <div className="flex items-center justify-between rounded-xl border border-border bg-surface p-5">
         <div>
-          <p className="text-base font-semibold text-ink-900">{zone.name}</p>
+          <p className="text-base font-semibold text-ink-900">
+            {zone.name}
+            {zone.deletedAt && (
+              <span className="ml-2 rounded-full bg-surface-muted px-2 py-0.5 text-[10px] text-text-muted">
+                eliminada
+              </span>
+            )}
+          </p>
           <p className="text-xs text-text-muted">
             {zone.code} {zone.isRestricted && '· Zona restringida'}
           </p>
         </div>
-        <span className="rounded-full bg-brand-50 px-3 py-1 text-sm font-medium text-brand-600">
-          {present.length} en zona ahora
-        </span>
+        <div className="flex items-center gap-4">
+          <span className="rounded-full bg-brand-50 px-3 py-1 text-sm font-medium text-brand-600">
+            {present.length} en zona ahora
+          </span>
+          <div className="flex items-center gap-3 text-xs font-medium">
+            <button type="button" onClick={() => setEditing(true)} className="text-brand-600 hover:underline">
+              Editar
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirming(true)}
+              className={zone.deletedAt ? 'text-brand-600 hover:underline' : 'text-danger-500 hover:underline'}
+            >
+              {zone.deletedAt ? 'Reactivar' : 'Desactivar'}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
@@ -177,6 +228,31 @@ export function ZoneDetailPage() {
           )}
         </div>
       </div>
+
+      {editing && (
+        <ZoneFormModal
+          title="Editar zona"
+          initial={zone}
+          busy={busy}
+          onCancel={() => setEditing(false)}
+          onSubmit={handleEdit}
+        />
+      )}
+      {confirming && (
+        <ConfirmDialog
+          title={zone.deletedAt ? 'Reactivar zona' : 'Desactivar zona'}
+          message={
+            zone.deletedAt
+              ? `¿Reactivar la zona ${zone.name}?`
+              : `¿Desactivar la zona ${zone.name}? Es una baja lógica: queda marcada como eliminada, pero su historial se conserva.`
+          }
+          confirmLabel={zone.deletedAt ? 'Reactivar' : 'Desactivar'}
+          danger={!zone.deletedAt}
+          busy={busy}
+          onCancel={() => setConfirming(false)}
+          onConfirm={handleToggleActive}
+        />
+      )}
     </div>
   )
 }
