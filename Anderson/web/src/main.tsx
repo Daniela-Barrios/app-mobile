@@ -12,6 +12,7 @@ import { GuardPage } from './pages/GuardPage.tsx'
 import { PlaceholderPage } from './pages/PlaceholderPage.tsx'
 import { UserDetailPage } from './pages/UserDetailPage.tsx'
 import { UsersPage } from './pages/UsersPage.tsx'
+import { ZoneDetailPage } from './pages/ZoneDetailPage.tsx'
 import { ZonesPage } from './pages/ZonesPage.tsx'
 
 createRoot(document.getElementById('root')!).render(
@@ -27,6 +28,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="biometria/:userId" element={<BiometricDetailPage />} />
           <Route path="accesos" element={<AccessLogsPage />} />
           <Route path="zonas" element={<ZonesPage />} />
+          <Route path="zonas/:zoneId" element={<ZoneDetailPage />} />
           <Route path="camaras" element={<CamerasPage />} />
           {/* Oculto del sidebar por ahora (ver components/Sidebar.tsx), pero
               se dejan las rutas vivas por si se reactiva el grupo Monitoreo. */}

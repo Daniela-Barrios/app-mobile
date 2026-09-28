@@ -23,7 +23,9 @@ export function Layout() {
     ? 'Detalle de usuario'
     : location.pathname.startsWith('/biometria/')
       ? 'Detalle biométrico'
-      : (PAGE_TITLES[location.pathname] ?? 'Control de Acceso')
+      : location.pathname.startsWith('/zonas/')
+        ? 'Detalle de zona'
+        : (PAGE_TITLES[location.pathname] ?? 'Control de Acceso')
 
   return (
     <div className="flex h-screen bg-surface-muted">
