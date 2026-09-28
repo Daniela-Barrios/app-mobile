@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react'
+import { NavLink } from 'react-router-dom'
 import {
   ActivityIcon,
   CameraIcon,
@@ -15,7 +16,7 @@ import {
 } from './icons'
 
 export type NavItem = {
-  id: string
+  to: string
   label: string
   icon: ComponentType<{ className?: string }>
 }
@@ -28,43 +29,41 @@ export type NavGroup = {
 export const NAV_GROUPS: NavGroup[] = [
   {
     title: 'General',
-    items: [{ id: 'resumen', label: 'Resumen', icon: HomeIcon }],
+    items: [{ to: '/resumen', label: 'Resumen', icon: HomeIcon }],
   },
   {
     title: 'Administración',
     items: [
-      { id: 'usuarios', label: 'Usuarios', icon: UsersIcon },
-      { id: 'biometria', label: 'Biometría', icon: FingerprintIcon },
-      { id: 'tokens', label: 'Tokens', icon: KeyIcon },
-      { id: 'accesos', label: 'Registros de acceso', icon: ListIcon },
-      { id: 'zonas', label: 'Zonas', icon: MapPinIcon },
-      { id: 'camaras', label: 'Cámaras', icon: CameraIcon },
+      { to: '/usuarios', label: 'Usuarios', icon: UsersIcon },
+      { to: '/biometria', label: 'Biometría', icon: FingerprintIcon },
+      { to: '/tokens', label: 'Tokens', icon: KeyIcon },
+      { to: '/accesos', label: 'Registros de acceso', icon: ListIcon },
+      { to: '/zonas', label: 'Zonas', icon: MapPinIcon },
+      { to: '/camaras', label: 'Cámaras', icon: CameraIcon },
     ],
   },
   {
     title: 'Monitoreo',
     items: [
-      { id: 'eventos', label: 'Eventos / Auditoría', icon: ActivityIcon },
-      { id: 'vigilante', label: 'Vigilante virtual', icon: HeadsetIcon },
+      { to: '/eventos', label: 'Eventos / Auditoría', icon: ActivityIcon },
+      { to: '/vigilante', label: 'Vigilante virtual', icon: HeadsetIcon },
     ],
   },
   {
     title: 'Sistema',
     items: [
-      { id: 'fase-a', label: 'Fase A (preparación)', icon: PlugIcon },
-      { id: 'configuracion', label: 'Configuración', icon: SettingsIcon },
+      { to: '/fase-a', label: 'Fase A (preparación)', icon: PlugIcon },
+      { to: '/configuracion', label: 'Configuración', icon: SettingsIcon },
     ],
   },
 ]
 
 type SidebarProps = {
-  activeId: string
-  onSelect: (id: string) => void
   open: boolean
   onClose: () => void
 }
 
-export function Sidebar({ activeId, onSelect, open, onClose }: SidebarProps) {
+export function Sidebar({ open, onClose }: SidebarProps) {
   return (
     <>
       {/* Overlay en mobile cuando el sidebar está abierto */}
@@ -112,22 +111,23 @@ export function Sidebar({ activeId, onSelect, open, onClose }: SidebarProps) {
               </p>
               <ul className="space-y-0.5">
                 {group.items.map((item) => {
-                  const isActive = item.id === activeId
                   const Icon = item.icon
                   return (
-                    <li key={item.id}>
-                      <button
-                        type="button"
-                        onClick={() => onSelect(item.id)}
-                        className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition ${
-                          isActive
-                            ? 'bg-brand-600 text-white font-medium'
-                            : 'text-ink-400 hover:bg-white/5 hover:text-white'
-                        }`}
+                    <li key={item.to}>
+                      <NavLink
+                        to={item.to}
+                        onClick={onClose}
+                        className={({ isActive }) =>
+                          `flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition ${
+                            isActive
+                              ? 'bg-brand-600 text-white font-medium'
+                              : 'text-ink-400 hover:bg-white/5 hover:text-white'
+                          }`
+                        }
                       >
                         <Icon className="h-[18px] w-[18px] shrink-0" />
                         <span className="truncate">{item.label}</span>
-                      </button>
+                      </NavLink>
                     </li>
                   )
                 })}

@@ -16,6 +16,15 @@ Detalle completo del mapa de pantallas en `docs/PLAN.md` §3 (11 módulos). Resu
 7. **Vigilante virtual:** chat simulado, botones "Llamar vigilante" e "Iniciar videollamada" (solo UI, sin funcionalidad real).
 8. **Placeholders Fase A** para el resto de integraciones (biométricos reales, portal de vigilancia real, control de puertas).
 
+## Arquitectura de datos ya implementada (web/src)
+- `types.ts`: tipos de dominio, uno a uno con las colecciones del mock.
+- `lib/apiClient.ts`: único cliente HTTP hacia `/api` (proxy de Vite al mock-api).
+- `repositories/`: un repositorio por colección, CRUD puro contra json-server, sin reglas de negocio. Ningún repositorio hace `DELETE`.
+- `services/tokenService.ts`: las reglas de token (único activo global por usuario, invalidación por validación biométrica, revocación manual, sin TTL) viven aquí, no en las páginas ni en los repositorios.
+- `hooks/useAsync.ts`: hook genérico de carga (loading/error/reload) que usan todas las páginas para traer datos reales.
+- `pages/`: una página por módulo; enrutadas con `react-router-dom` desde `main.tsx`, dentro de `Layout.tsx` (Sidebar + Topbar + `<Outlet/>`). Los módulos sin vista real usan `PlaceholderPage`.
+- Nuevos módulos de negocio (biometría, zonas, cámaras, etc.) deben seguir el mismo patrón: repositorio → servicio (si hay reglas) → página con `useAsync`.
+
 ## Reglas
 - Los datos vienen del mock a través de repositorios/servicios (nunca hardcodeados en componentes ni escritos directo al mock); estados de carga, vacío y error en cada vista.
 - Toda acción "eliminar" es baja lógica (`deletedAt`) con confirmación; las listas ocultan lo eliminado por defecto con un toggle "mostrar eliminados".
