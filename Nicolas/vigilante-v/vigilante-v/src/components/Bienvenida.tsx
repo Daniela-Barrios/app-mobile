@@ -17,6 +17,12 @@ import {
   Send,
   Volume2,
   VolumeX,
+  Phone,
+  PhoneOff,
+  Mic,
+  MicOff,
+  Video,
+  VideoOff
 } from 'lucide-react';
 import type { Kiosco } from '../api/tipos';
 import { useAhora } from './piezas';
@@ -63,7 +69,8 @@ const PASOS_AYUDA = [
 
 /* ================================== TIPOS ================================== */
 
-type Vista = 'menu' | 'vigilante' | 'registro' | 'ingreso' | 'faq' | 'ayuda' | 'asistente' | 'accesibilidad';
+type Vista = 'menu' | 'vigilante' | 'registro' | 'ingreso' | 'faq' | 'ayuda' | 'asistente' | 'accesibilidad' | 'llamada_voz' | 'llamada_video' | 'comunicacion';
+
 type Mensaje = { de: 'yo' | 'bot'; texto: string };
 type Tema = {
   fondo: string;
@@ -255,13 +262,16 @@ function BienvenidaVigilante({
 
 const TITULOS: Record<Vista, string> = {
   menu: '¿En qué te ayudamos?',
-  vigilante: 'Hablar con el vigilante',
+  vigilante: 'Chat con el vigilante',
   registro: 'Registrarme',
   ingreso: 'Solicitar ingreso',
   faq: 'Preguntas frecuentes',
   ayuda: 'Ayuda',
   asistente: 'Asistente virtual',
   accesibilidad: 'Accesibilidad',
+  llamada_voz: 'Llamada de voz',
+  llamada_video: 'Videollamada',
+  comunicacion: 'Centro de comunicación',
 };
 
 function Panel({ kiosco, onInicio }: { kiosco: Kiosco; onInicio: () => void }) {
@@ -308,6 +318,9 @@ function Panel({ kiosco, onInicio }: { kiosco: Kiosco; onInicio: () => void }) {
 
       <main className="flex-1 overflow-y-auto p-4">
         {vista === 'menu' && <Menu tema={tema} ir={setVista} />}
+        {vista === 'comunicacion' && <VistaComunicacion tema={tema} ir={setVista} />}
+        {vista === 'llamada_voz' && <VistaSimulacionLlamada tema={tema} tipo="voz" alTerminar={() => setVista('menu')} />}
+        {vista === 'llamada_video' && <VistaSimulacionLlamada tema={tema} tipo="video" alTerminar={() => setVista('menu')} />}
         {vista === 'vigilante' && <VistaVigilante tema={tema} voz={voz} />}
         {vista === 'registro' && <VistaRegistro tema={tema} alTerminar={() => setVista('menu')} />}
         {vista === 'ingreso' && <VistaIngreso tema={tema} alTerminar={() => setVista('menu')} />}
@@ -345,6 +358,7 @@ function Panel({ kiosco, onInicio }: { kiosco: Kiosco; onInicio: () => void }) {
 
 function Menu({ tema, ir }: { tema: Tema; ir: (v: Vista) => void }) {
   const items: { v: Vista; titulo: string; sub: string; Icono: typeof Bot }[] = [
+    { v: 'comunicacion', titulo: 'Comunicación', sub: 'Llama, haz videollamada o chatea', Icono: Phone },
     { v: 'registro', titulo: 'Registrarme', sub: 'Tus datos y una foto rápida', Icono: Contact },
     { v: 'ingreso', titulo: 'Solicitar ingreso', sub: 'Pide permiso para entrar a la bodega', Icono: DoorOpen },
     { v: 'faq', titulo: 'Preguntas frecuentes', sub: 'Requisitos, horarios, carnet y más', Icono: CircleHelp },
@@ -355,24 +369,12 @@ function Menu({ tema, ir }: { tema: Tema; ir: (v: Vista) => void }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <button
-        onClick={() => ir('vigilante')}
-        className="rounded-2xl p-5 text-left flex flex-col gap-6"
-        style={{ background: tema.acento, color: tema.acentoTexto, border: `1px solid ${tema.borde}` }}
-      >
-        <MessagesSquare size={30} aria-hidden="true" />
-        <div>
-          <p className="text-[18px] font-bold">Hablar con el vigilante</p>
-          <p className="text-[12px] opacity-90 mt-1">Escríbele y resuelve tu consulta</p>
-        </div>
-      </button>
-
       <div className="grid grid-cols-2 gap-3">
         {items.map(({ v, titulo, sub, Icono }) => (
           <button
             key={v}
             onClick={() => ir(v)}
-            className="rounded-2xl p-4 text-left flex flex-col gap-5 min-h-[130px]"
+            className="rounded-2xl p-4 text-left flex flex-col gap-5 min-h-[130px] transition-transform active:scale-95"
             style={{ background: tema.tarjeta, border: `1px solid ${tema.borde}`, color: tema.texto }}
           >
             <Icono size={26} style={{ color: tema.acento }} aria-hidden="true" />
@@ -384,6 +386,56 @@ function Menu({ tema, ir }: { tema: Tema; ir: (v: Vista) => void }) {
             </div>
           </button>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------------- Centro de Comunicación ----------------------------- */
+
+function VistaComunicacion({ tema, ir }: { tema: Tema; ir: (v: Vista) => void }) {
+  return (
+    <div className="flex flex-col gap-4 mt-2">
+      <p className="text-[15px] text-center mb-2 font-medium" style={{ color: tema.sub }}>
+        ¿Cómo prefieres contactar al vigilante?
+      </p>
+      
+      <div className="flex flex-col gap-3">
+        <button
+          onClick={() => ir('llamada_voz')}
+          className="rounded-2xl p-5 text-left flex items-center gap-5 shadow-sm transition-transform active:scale-95"
+          style={{ background: '#16A34A', color: '#FFFFFF' }}
+        >
+          <Phone size={32} aria-hidden="true" />
+          <div>
+            <p className="text-[18px] font-bold">Llamada de voz</p>
+            <p className="text-[13px] opacity-90 mt-1">Habla con el vigilante por audio</p>
+          </div>
+        </button>
+
+        <button
+          onClick={() => ir('llamada_video')}
+          className="rounded-2xl p-5 text-left flex items-center gap-5 shadow-sm transition-transform active:scale-95"
+          style={{ background: '#2563EB', color: '#FFFFFF' }}
+        >
+          <Video size={32} aria-hidden="true" />
+          <div>
+            <p className="text-[18px] font-bold">Videollamada</p>
+            <p className="text-[13px] opacity-90 mt-1">Llama con cámara activada</p>
+          </div>
+        </button>
+
+        <button
+          onClick={() => ir('vigilante')}
+          className="rounded-2xl p-5 text-left flex items-center gap-5 shadow-sm transition-transform active:scale-95"
+          style={{ background: tema.acento, color: tema.acentoTexto }}
+        >
+          <MessagesSquare size={32} aria-hidden="true" />
+          <div>
+            <p className="text-[18px] font-bold">Chat de texto</p>
+            <p className="text-[13px] opacity-90 mt-1">Escríbele un mensaje al vigilante</p>
+          </div>
+        </button>
       </div>
     </div>
   );
@@ -449,7 +501,7 @@ function BotonPrimario({
       type={tipo}
       onClick={onClick}
       disabled={deshabilitado}
-      className="rounded-xl py-3 px-5 font-bold text-[16px] flex items-center justify-center gap-2 disabled:opacity-50"
+      className="rounded-xl py-3 px-5 font-bold text-[16px] flex items-center justify-center gap-2 disabled:opacity-50 transition-transform active:scale-95"
       style={{ background: tema.acento, color: tema.acentoTexto }}
     >
       {children}
@@ -544,7 +596,7 @@ function Chat({
             <button
               key={s}
               onClick={() => onEnviar(s)}
-              className="rounded-full px-3 py-2 text-[13px] font-bold"
+              className="rounded-full px-3 py-2 text-[13px] font-bold transition-transform active:scale-95"
               style={{ border: `1px solid ${tema.acento}`, color: tema.acento, background: tema.tarjeta }}
             >
               {s}
@@ -563,7 +615,7 @@ function Chat({
         <button
           type="submit"
           aria-label="Enviar"
-          className="rounded-xl px-4 flex items-center justify-center"
+          className="rounded-xl px-4 flex items-center justify-center transition-transform active:scale-95"
           style={{ background: tema.acento, color: tema.acentoTexto }}
         >
           <Send size={20} />
@@ -660,7 +712,7 @@ function VistaRegistro({ tema, alTerminar }: { tema: Tema; alTerminar: () => voi
           </span>
           {foto && <img src={foto} alt="Tu foto" className="w-32 h-32 rounded-2xl object-cover self-center" />}
           <label
-            className="rounded-xl py-3 font-bold text-[15px] flex items-center justify-center gap-2 cursor-pointer"
+            className="rounded-xl py-3 font-bold text-[15px] flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-95"
             style={{ border: `1px dashed ${tema.acento}`, color: tema.acento }}
           >
             <Camera size={20} />
@@ -919,6 +971,146 @@ function VistaAccesibilidad({
       <BotonPrimario tema={tema} onClick={() => hablar('Así suena la lectura en voz alta del vigilante virtual.')}>
         <Volume2 size={20} /> Probar voz
       </BotonPrimario>
+    </div>
+  );
+}
+
+/* ------------------------ Simulación Llamada / Video (Moderna) ------------------------ */
+
+function VistaSimulacionLlamada({ tema, tipo, alTerminar }: { tema: Tema; tipo: 'voz' | 'video'; alTerminar: () => void }) {
+  const [estado, setEstado] = useState<'marcando' | 'conectado' | 'finalizada'>('marcando');
+  const [segundos, setSegundos] = useState(0);
+  const [micSilenciado, setMicSilenciado] = useState(false);
+  const [camApagada, setCamApagada] = useState(false);
+
+  useEffect(() => {
+    if (estado === 'marcando') {
+      const timer = setTimeout(() => setEstado('conectado'), 3000); 
+      return () => clearTimeout(timer);
+    }
+    if (estado === 'conectado') {
+      const timer = setInterval(() => setSegundos((s) => s + 1), 1000);
+      return () => clearInterval(timer);
+    }
+  }, [estado]);
+
+  const colgar = () => {
+    setEstado('finalizada');
+    setTimeout(alTerminar, 1500);
+  };
+
+  const tiempo = `${Math.floor(segundos / 60).toString().padStart(2, '0')}:${(segundos % 60).toString().padStart(2, '0')}`;
+  const esVideo = tipo === 'video';
+
+  const colorFondo = esVideo ? '#000000' : tema.fondo;
+  const colorTextoPrincipal = esVideo ? '#FFFFFF' : tema.texto;
+  const colorTextoSecundario = esVideo ? 'rgba(255,255,255,0.7)' : tema.sub;
+
+  return (
+    <div 
+      className="flex flex-col items-center justify-between h-full relative overflow-hidden rounded-3xl transition-colors duration-500" 
+      style={{ background: colorFondo, color: colorTextoPrincipal }}
+    >
+      
+      {/* Fondo de Video (Solo Videollamada) */}
+      {esVideo && estado === 'conectado' && !camApagada && (
+        <>
+          <video 
+            src={VIDEO_FONDO} 
+            autoPlay 
+            loop 
+            muted 
+            className="absolute inset-0 w-full h-full object-cover" 
+          />
+          {/* Gradiente oscuro superior e inferior para legibilidad del texto y controles */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/60 pointer-events-none" />
+        </>
+      )}
+
+      {/* Avatar y Estado (Sección Superior/Central) */}
+      <div className="flex-1 flex flex-col items-center justify-center w-full z-10 px-6">
+        {(!esVideo || estado !== 'conectado' || camApagada) && (
+          <div className="relative mb-8 flex items-center justify-center">
+            {/* Animación de ondas pulsantes al marcar */}
+            {estado === 'marcando' && (
+              <div 
+                className="absolute inset-0 rounded-full animate-ping opacity-20" 
+                style={{ backgroundColor: esVideo ? '#3B82F6' : tema.acento }}
+              />
+            )}
+            
+            {/* Círculo del Avatar */}
+            <div 
+              className="relative w-32 h-32 rounded-full flex items-center justify-center shadow-xl transition-all duration-300"
+              style={{ 
+                background: esVideo ? '#1E293B' : tema.tarjeta, 
+                color: esVideo ? '#60A5FA' : tema.acento,
+                border: `1px solid ${esVideo ? 'rgba(255,255,255,0.1)' : tema.borde}` 
+              }}
+            >
+              <Bot size={54} strokeWidth={1.5} aria-hidden="true" />
+            </div>
+          </div>
+        )}
+
+        {/* Textos de estado más limpios */}
+        <h2 className="text-[26px] font-semibold tracking-tight drop-shadow-md">
+          {estado === 'marcando' ? 'Llamando...' : estado === 'conectado' ? 'Vigilante' : 'Finalizada'}
+        </h2>
+        <p 
+          className="text-[16px] mt-1 font-medium tracking-wide drop-shadow-md transition-all" 
+          style={{ color: colorTextoSecundario }}
+        >
+          {estado === 'conectado' ? tiempo : estado === 'marcando' ? 'Conectando' : 'Desconectado'}
+        </p>
+      </div>
+
+      {/* "Dock" Flotante de Controles (Glassmorphism) */}
+      <div className="z-10 w-full pb-10 flex justify-center px-4">
+        <div 
+          className="flex items-center justify-center gap-4 px-6 py-4 rounded-[2rem] shadow-2xl backdrop-blur-xl border transition-all duration-300"
+          style={{ 
+            background: esVideo || tema.fondo === '#000000' ? 'rgba(30, 41, 59, 0.6)' : 'rgba(255, 255, 255, 0.8)',
+            borderColor: esVideo || tema.fondo === '#000000' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+          }}
+        >
+          {/* Botón de Micrófono */}
+          <button
+            onClick={() => setMicSilenciado(!micSilenciado)}
+            disabled={estado !== 'conectado'}
+            className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 disabled:opacity-30 hover:scale-105"
+            style={{ 
+              background: micSilenciado ? '#FEE2E2' : (esVideo || tema.fondo === '#000000' ? 'rgba(255,255,255,0.1)' : tema.fondo),
+              color: micSilenciado ? '#EF4444' : colorTextoPrincipal
+            }}
+          >
+            {micSilenciado ? <MicOff size={24} /> : <Mic size={24} />}
+          </button>
+
+          {/* Botón de Cámara (Solo si es videollamada) */}
+          {esVideo && (
+            <button
+              onClick={() => setCamApagada(!camApagada)}
+              disabled={estado !== 'conectado'}
+              className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 disabled:opacity-30 hover:scale-105"
+              style={{ 
+                background: camApagada ? '#FEE2E2' : 'rgba(255,255,255,0.1)',
+                color: camApagada ? '#EF4444' : '#FFFFFF'
+              }}
+            >
+              {camApagada ? <VideoOff size={24} /> : <Video size={24} />}
+            </button>
+          )}
+
+          {/* Botón de Colgar (Destacado) */}
+          <button
+            onClick={colgar}
+            className="w-16 h-16 rounded-full flex items-center justify-center text-white bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30 transition-all duration-300 hover:scale-105"
+          >
+            <PhoneOff size={28} />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
