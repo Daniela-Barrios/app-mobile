@@ -11,11 +11,11 @@ Plan de acción vigente: @docs/PLAN.md
 1. **Todo local, cero despliegues.** Nada de cloud, CI/CD de deploy ni servicios externos.
 2. **Todo servicio corre en Docker** (`docker compose up`). No instalar backend/mock-api en el host.
 3. **Prioridad frontend.** Mucho más trabajo de UI que de backend; el backend es solo un mock ligero (ver `docs/PLAN.md`).
-4. **Todo es administrable, aunque los datos sean simulados.** Cada entidad (usuarios, tokens, zonas, cámaras, eventos, solicitudes al vigilante) tiene sus pantallas de crear/editar/consultar/dar de baja.
+4. **Este dashboard es de monitoreo y administración de personas/accesos, NO de emisión de tokens.** Los tokens se generan en otra aplicación (fuera de este alcance); aquí solo se **observan** — usuarios, zonas, cámaras, biometría y el historial de accesos (que incluye el uso de esos tokens) sí son administrables (crear/editar/consultar/dar de baja), pero no existe una pantalla para "generar token".
 5. **Eliminar = siempre baja lógica (soft delete).** Ningún dato se borra físicamente en ninguna colección, nunca. Toda acción de "eliminar" en la UI marca `deletedAt`/inactivo y queda auditada; las listas la ocultan por defecto con opción de mostrarla.
-6. **Un único token activo por usuario, GLOBAL en todo el sistema (no por zona).** Si un usuario tiene un token activo en cualquier zona, no puede emitírsele otro hasta que ese token sea validado (biometría) o revocado manualmente. **Sin TTL:** los tokens no caducan por tiempo. Ver skill `token-rules`.
+6. **Un único token activo por usuario, GLOBAL en todo el sistema (no por zona), sin TTL.** Regla del sistema externo que emite los tokens; documentada aquí (skill `token-rules`) porque el mock la respeta al generar datos semilla y porque el dashboard debe entenderla para mostrar el estado correctamente, no porque la UI la ejecute.
 7. **Trazabilidad total:** Usuario → Fotografía → Token → Zona → Registro de acceso. Ningún acceso puede quedar sin esa cadena. `tokenHistory`, `accessLogs` y `events` son inmutables (append-only).
-8. **Cámaras simuladas "conectables"** desde el dashboard (flujo visual de conexión). El resto de integraciones de Fase A (biométricos reales, portal de vigilancia real, control de puertas) son solo vistas básicas o placeholders en esta fase.
+8. **Cámaras simuladas "conectables"**, agrupadas por zona en una vista de pestañas. El resto de integraciones de Fase A (biométricos reales, portal de vigilancia real, control de puertas) son solo vistas básicas o placeholders en esta fase.
 9. **Fase A sin reescritura:** integraciones futuras entran por interfaces/adaptadores (ver skill `fase-a-readiness`); la Fase 0 solo aporta implementaciones *mock*.
 10. **Etapa de planificación = cero código.** Mientras no se apruebe `docs/PLAN.md`, solo se producen documentos (ver skill `plan-fase0`).
 

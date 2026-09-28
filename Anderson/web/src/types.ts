@@ -8,6 +8,8 @@ export interface User {
   documentId: string
   fullName: string
   status: UserStatus
+  company: string | null
+  phone: string | null
   createdAt: string
   deletedAt: string | null
 }

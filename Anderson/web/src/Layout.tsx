@@ -7,8 +7,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/resumen': 'Resumen',
   '/usuarios': 'Usuarios',
   '/biometria': 'Biometría',
-  '/tokens': 'Tokens',
-  '/accesos': 'Registros de acceso',
+  '/accesos': 'Accesos',
   '/zonas': 'Zonas',
   '/camaras': 'Cámaras',
   '/eventos': 'Eventos / Auditoría',
@@ -20,7 +19,9 @@ const PAGE_TITLES: Record<string, string> = {
 export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
-  const title = PAGE_TITLES[location.pathname] ?? 'Control de Acceso'
+  const title = location.pathname.startsWith('/usuarios/')
+    ? 'Detalle de usuario'
+    : (PAGE_TITLES[location.pathname] ?? 'Control de Acceso')
 
   return (
     <div className="flex h-screen bg-surface-muted">

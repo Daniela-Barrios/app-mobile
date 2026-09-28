@@ -16,6 +16,9 @@ Se mantiene: todo local, cero despliegues, servicios en Docker, **todo administr
 2. **Un único token activo por usuario, GLOBAL en todo el sistema (no por zona) — corrección.** Un usuario no puede tener más de un token `activo` a la vez, sin importar la zona: si tiene un token activo para "Entrada Principal", no puede generarse (ni existir) otro para "Bodega" u otra zona hasta que el primero sea **utilizado** (validado por biométrico) o **revocado manualmente**. Se invalida al validarse contra el biométrico simulado, no por un "uso" genérico ni por vencimiento.
 3. **Sin TTL / sin caducidad.** Los tokens no vencen por tiempo. Viven en estado `activo` indefinidamente hasta que se validan (biometría) o se invalidan manualmente. El estado `vencido` **se elimina del modelo**.
 4. **Stack confirmado: Vite + React + Tailwind CSS, cero librerías de componentes prefabricados** (nada de Material UI, Bootstrap, Ant, etc.). Todo componente visual se construye a mano con Tailwind. Para el mock local, la solución más ágil disponible (json-server). Ver §6.
+5. **Corrección de alcance: los tokens se generan en otra aplicación.** Este dashboard es de monitoreo y administración de personas/accesos, no de emisión de tokens. Se elimina el módulo "Tokens" (generar/validar/revocar desde la UI); su información se integra como **monitoreo de uso** dentro de "Accesos" (renombrado desde "Registros de acceso", ahora con filtros por zona y usuario) y dentro del **detalle de cada usuario** (ficha con datos personales, foto, resumen de accesos y traza de acciones — ver §3). Las reglas de token (§ Decisión 2 y 3) se mantienen documentadas porque el dataset simulado debe seguir siendo coherente con ellas.
+6. **Zonas fijas: Entrada, Bodega, Oficina.**
+7. **Cámaras: vista por pestañas, una pestaña por zona**, listando las cámaras de esa zona.
 
 ## 1. Arquitectura propuesta
 
@@ -73,19 +76,19 @@ Reglas de integridad que la capa de servicios debe garantizar: todo acceso lleva
 > Nota sobre "eliminar" (regla de oro, confirmada): **toda eliminación en toda la maqueta es baja lógica con confirmación**, sin excepción — usuarios, tokens, zonas, cámaras, admins, solicitudes de vigilante. Nunca se borra un dato físicamente. `tokenHistory`, `accessLogs` y `events` ni siquiera se dan de baja: son inmutables.
 
 ## 3. Mapa de pantallas (alta fidelidad)
-Navegación lateral + barra superior (estado del sistema, admin actual, tema claro/oscuro opcional).
+Navegación lateral + barra superior (estado del sistema, admin actual, tema claro/oscuro opcional). El grupo "Monitoreo" (Eventos, Vigilante virtual) está oculto del sidebar por ahora; sus rutas siguen existiendo.
 
 | # | Módulo | Contenido | Administración |
 |---|---|---|---|
-| 1 | **Resumen** | KPIs (usuarios total/activos/inactivos, ingresos del día, accesos por zona, tokens generados/activos/inválidos, biometrías registradas/pendientes, eventos, solicitudes atendidas, estado operativo), gráfico por zona, actividad reciente | Accesos directos a acciones frecuentes |
-| 2 | **Usuarios** | Tabla + detalle con foto, estado, biometría, tokens, accesos | Crear, editar, desactivar/eliminar (**soft**), subir foto |
+| 1 | **Resumen** | KPIs (usuarios total/activos/inactivos, accesos por zona, tokens activos, biometrías registradas/pendientes, eventos totales), gráfico por zona, actividad reciente | Accesos directos a acciones frecuentes |
+| 2 | **Usuarios** | Listado con búsqueda (nombre/documento), avatar, empresa, estado, biometría. Cada usuario abre su **ficha** (`/usuarios/:id`): datos personales (documento, empresa, teléfono), estado, biometría, contadores de accesos autorizados/rechazados, **últimos accesos** (uso de token por zona) y **acciones y trazas** (auditoría de ese usuario) | Crear, editar, desactivar/eliminar (**soft**), subir foto |
 | 3 | **Biometría (simulada)** | Asistente: subir foto → generar ID → asociar → guardar; contadores registradas/pendientes | Re-enrolar, revocar (**soft**) |
-| 4 | **Tokens** | Tabla con filtros (estado, zona, usuario), detalle con línea de tiempo de estados | Generar (bloqueado si el usuario ya tiene **cualquier** token activo, sin importar la zona), revocar manualmente, **simular validación biométrica** (invalida el token). Sin caducidad/TTL |
-| 5 | **Registros de acceso** | Historial, búsqueda, filtros, detalle con cadena de trazabilidad visual | Simular acceso vía validación biométrica; ver/exportar (registros inmutables) |
-| 6 | **Eventos / Auditoría** | Lista filtrable por tipo, actor y fecha | Visualizar y auditar (inmutable) |
-| 7 | **Zonas** | Listado y configuración de zonas | Crear, editar, activar/desactivar/eliminar (**soft**) |
-| 8 | **Cámaras** | Grilla de cámaras por zona con estados; flujo de "conectar" simulado (buscar → conectando → conectada), vista en vivo simulada (video/imagen de ejemplo), asociación de evidencia a un acceso | Agregar, editar, conectar/desconectar, eliminar (**soft**) |
-| 9 | **Vigilante virtual** | Chat simulado con respuestas guionadas, botones "Llamar vigilante" e "Iniciar videollamada" (solo UI), cola de solicitudes | Atender/cerrar solicitudes, eliminar (**soft**) |
+| ~~4~~ | ~~Tokens~~ | **Eliminado.** Los tokens se generan en otra aplicación; esta UI no los emite ni valida. Su uso se monitorea desde "Accesos" y desde la ficha del usuario. | — |
+| 5 | **Accesos** (antes "Registros de acceso") | Historial con **filtros por zona y por usuario**, token usado, resultado (autorizado/rechazado + motivo) | Monitoreo: ver/exportar (registros inmutables); no se generan accesos desde aquí |
+| 6 | **Eventos / Auditoría** *(oculto del nav)* | Lista filtrable por tipo, actor y fecha | Visualizar y auditar (inmutable) |
+| 7 | **Zonas** | Entrada, Bodega, Oficina — listado y configuración | Crear, editar, activar/desactivar/eliminar (**soft**) |
+| 8 | **Cámaras** | **Vista por pestañas, una por zona.** Cada pestaña muestra la grilla de cámaras de esa zona con su estado (desconectada/conectando/conectada/error) y última señal | Agregar, editar, conectar/desconectar, eliminar (**soft**) |
+| 9 | **Vigilante virtual** *(oculto del nav)* | Chat simulado con respuestas guionadas, botones "Llamar vigilante" e "Iniciar videollamada" (solo UI), cola de solicitudes | Atender/cerrar solicitudes, eliminar (**soft**) |
 | 10 | **Fase A (placeholders)** | Vistas básicas de Biométricos, Portal de vigilancia real, Control de puertas: tarjeta "Próximamente", estado, contrato esperado | Ninguna (solo informativo) |
 | 11 | **Configuración** | Reset de datos mock, escenario de demo, semilla | Restablecer dataset |
 

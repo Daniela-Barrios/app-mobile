@@ -27,10 +27,13 @@ const USER_COUNT = 40
 const ADMIN = { id: 'admin-1', name: 'Ana Restrepo', role: 'administrador', deletedAt: null }
 
 const zones = [
-  { id: 'zone-1', code: 'ENTRADA', name: 'Ingreso Principal', isRestricted: false, active: true, deletedAt: null },
-  { id: 'zone-2', code: 'LOBBY', name: 'Lobby', isRestricted: false, active: true, deletedAt: null },
-  { id: 'zone-3', code: 'RESTRINGIDA', name: 'Area Restringida', isRestricted: true, active: true, deletedAt: null },
+  { id: 'zone-1', code: 'ENTRADA', name: 'Entrada', isRestricted: false, active: true, deletedAt: null },
+  { id: 'zone-2', code: 'BODEGA', name: 'Bodega', isRestricted: true, active: true, deletedAt: null },
+  { id: 'zone-3', code: 'OFICINA', name: 'Oficina', isRestricted: true, active: true, deletedAt: null },
 ]
+
+const COMPANIES = ['Bodegas Panamericana', 'Transportes del Valle', 'Logística Andina', null]
+const PHONE_PREFIXES = ['300', '301', '310', '311', '320']
 
 const users = []
 const photos = []
@@ -66,11 +69,16 @@ for (let i = 0; i < USER_COUNT; i++) {
   const isDeactivated = userNum % 10 === 0
   const createdAt = iso(-60 * 24 * (USER_COUNT - i))
 
+  const company = COMPANIES[userNum % COMPANIES.length]
+  const phone = `${PHONE_PREFIXES[userNum % PHONE_PREFIXES.length]}${String(1000000 + userNum * 37).slice(-7)}`
+
   users.push({
     id: userId,
     documentId,
     fullName,
     status: isDeactivated ? 'inactivo' : 'activo',
+    company,
+    phone,
     createdAt,
     deletedAt: null,
   })
@@ -230,15 +238,23 @@ if (deniedUser) {
   }
 }
 
-const cameras = zones.map((zone, i) => ({
-  id: `camera-${i + 1}`,
-  zoneId: zone.id,
-  name: `Camara ${zone.name}`,
-  streamRef: `/seed-media/camera-placeholder.svg`,
-  status: i === 0 ? 'conectada' : i === 1 ? 'conectando' : 'desconectada',
-  lastSeenAt: i === 0 ? iso(-5) : null,
-  deletedAt: null,
-}))
+// 2 cámaras por zona, con estados variados para demostrar la vista por pestañas.
+const CAMERA_STATES = ['conectada', 'conectando', 'desconectada', 'error']
+const cameras = zones.flatMap((zone, zoneIndex) =>
+  [1, 2].map((n) => {
+    const stateIndex = (zoneIndex * 2 + (n - 1)) % CAMERA_STATES.length
+    const status = CAMERA_STATES[stateIndex]
+    return {
+      id: `camera-${zone.id}-${n}`,
+      zoneId: zone.id,
+      name: `${zone.name} · Cámara ${n}`,
+      streamRef: `/seed-media/camera-placeholder.svg`,
+      status,
+      lastSeenAt: status === 'conectada' ? iso(-5) : null,
+      deletedAt: null,
+    }
+  }),
+)
 
 const guardRequests = [
   {

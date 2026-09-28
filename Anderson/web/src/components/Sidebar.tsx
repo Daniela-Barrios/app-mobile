@@ -1,13 +1,10 @@
 import type { ComponentType } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
-  ActivityIcon,
   CameraIcon,
   CloseIcon,
   FingerprintIcon,
-  HeadsetIcon,
   HomeIcon,
-  KeyIcon,
   ListIcon,
   MapPinIcon,
   PlugIcon,
@@ -26,6 +23,11 @@ export type NavGroup = {
   items: NavItem[]
 }
 
+// Nota: los tokens se generan en otro sistema — esta app solo monitorea su
+// uso. Por eso no hay un módulo "Tokens" aquí: sus acciones (validado,
+// revocado, etc.) se ven dentro de "Accesos". El grupo "Monitoreo" (Eventos,
+// Vigilante virtual) queda oculto por ahora a pedido del usuario, sin borrar
+// sus rutas/páginas (ver main.tsx).
 export const NAV_GROUPS: NavGroup[] = [
   {
     title: 'General',
@@ -36,17 +38,9 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: '/usuarios', label: 'Usuarios', icon: UsersIcon },
       { to: '/biometria', label: 'Biometría', icon: FingerprintIcon },
-      { to: '/tokens', label: 'Tokens', icon: KeyIcon },
-      { to: '/accesos', label: 'Registros de acceso', icon: ListIcon },
+      { to: '/accesos', label: 'Accesos', icon: ListIcon },
       { to: '/zonas', label: 'Zonas', icon: MapPinIcon },
       { to: '/camaras', label: 'Cámaras', icon: CameraIcon },
-    ],
-  },
-  {
-    title: 'Monitoreo',
-    items: [
-      { to: '/eventos', label: 'Eventos / Auditoría', icon: ActivityIcon },
-      { to: '/vigilante', label: 'Vigilante virtual', icon: HeadsetIcon },
     ],
   },
   {

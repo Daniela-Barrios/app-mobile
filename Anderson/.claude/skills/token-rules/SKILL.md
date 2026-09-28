@@ -5,6 +5,8 @@ description: Reglas de negocio y máquina de estados de los tokens de acceso (ú
 
 # Reglas de tokens
 
+> **Alcance (corrección del usuario):** los tokens se generan en **otra aplicación**. Este dashboard no emite ni valida tokens desde su UI — solo **monitorea** su uso (visible en el módulo "Accesos" y en el detalle de cada usuario). Estas reglas se documentan igual porque: (1) el generador de datos semilla (`mock-api/seed.js`) debe respetarlas para que el dataset sea coherente, y (2) `web/src/services/tokenService.ts` las codifica como referencia/utilidad, aunque hoy ninguna página de la UI lo invoca.
+
 ## Máquina de estados
 ```
 activo --validación biométrica--> inválido

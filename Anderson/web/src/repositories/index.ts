@@ -58,6 +58,8 @@ export const tokenHistoryRepository = {
 
 export const accessLogsRepository = {
   list: () => api.get<AccessLog[]>('/accessLogs?_sort=occurredAt&_order=desc'),
+  listByUser: (userId: string) =>
+    api.get<AccessLog[]>(`/accessLogs?userId=${userId}&_sort=occurredAt&_order=desc`),
   create: (log: AccessLog) => api.post<AccessLog>('/accessLogs', log),
 }
 
