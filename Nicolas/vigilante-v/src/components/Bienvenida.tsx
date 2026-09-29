@@ -32,7 +32,7 @@ import { fechaLarga, horaActual12, hoyISO } from '../lib/formato';
 
 /* ============================== CONFIGURACIÓN ============================== */
 
-const VIDEO_FONDO = '/video-vigilante.mp4.mp4';
+const VIDEO_FONDO = '/video-vigilante.mp4';
 const VIDEO_CON_SONIDO = true;
 
 const EMPRESAS = ['Fraco', 'Kabil', 'Panamericana', 'Otra'];
