@@ -908,6 +908,7 @@ function VistaRegistro({
   const [camaraLista, setCamaraLista] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const colorError = tema.fondo === '#000000' ? '#FCA5A5' : '#B91C1C';
 
   const cambiar = (k: keyof DatosRegistro, v: string) => setDatos((d) => ({ ...d, [k]: v }));
 
