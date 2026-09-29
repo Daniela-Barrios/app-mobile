@@ -1,15 +1,17 @@
 import { Link } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
 import { useAsync } from '../hooks/useAsync'
-import { biometricsRepository, usersRepository } from '../repositories'
+import { latestPhotoByUser } from '../lib/photos'
+import { biometricsRepository, photosRepository, usersRepository } from '../repositories'
 import type { BiometricStatus } from '../types'
 
 async function loadBiometrics() {
-  const [users, biometrics] = await Promise.all([
+  const [users, biometrics, photos] = await Promise.all([
     usersRepository.list(),
     biometricsRepository.list(),
+    photosRepository.list(),
   ])
-  return { users, biometrics }
+  return { users, biometrics, photoByUser: latestPhotoByUser(photos) }
 }
 
 const statusStyle: Record<BiometricStatus, string> = {
@@ -25,7 +27,7 @@ export function BiometricsPage() {
   if (error) return <p className="text-sm text-danger-500">Error: {error}</p>
   if (!data) return null
 
-  const { users, biometrics } = data
+  const { users, biometrics, photoByUser } = data
 
   return (
     <div className="rounded-xl border border-border bg-surface">
@@ -57,7 +59,7 @@ export function BiometricsPage() {
                       to={`/biometria/${user.id}`}
                       className="flex items-center gap-3 text-ink-900 hover:text-brand-600"
                     >
-                      <Avatar name={user.fullName} size="sm" />
+                      <Avatar name={user.fullName} size="sm" photoUrl={photoByUser.get(user.id)} />
                       {user.fullName}
                     </Link>
                   </td>

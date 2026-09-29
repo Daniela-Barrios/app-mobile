@@ -11,6 +11,7 @@ import {
   accessLogsRepository,
   biometricsRepository,
   eventsRepository,
+  photosRepository,
   tokensRepository,
   usersRepository,
   zonesRepository,
@@ -18,16 +19,17 @@ import {
 import { deactivateUser, reactivateUser, updateUser } from '../services/userService'
 
 async function loadUserDetail(userId: string) {
-  const [user, biometrics, accessLogs, tokens, zones, events] = await Promise.all([
+  const [user, biometrics, accessLogs, tokens, zones, events, photos] = await Promise.all([
     usersRepository.get(userId),
     biometricsRepository.listByUser(userId),
     accessLogsRepository.listByUser(userId),
     tokensRepository.listByUser(userId),
     zonesRepository.list(),
     eventsRepository.list(),
+    photosRepository.listByUser(userId),
   ])
   const actions = actionsForUser(userId, events, { tokens, biometrics, accessLogs })
-  return { user, biometrics, accessLogs, tokens, zones, actions }
+  return { user, biometrics, accessLogs, tokens, zones, actions, photoUrl: photos[0]?.url ?? null }
 }
 
 export function UserDetailPage() {
@@ -45,7 +47,7 @@ export function UserDetailPage() {
   if (error) return <p className="text-sm text-danger-500">Error: {error}</p>
   if (!data) return null
 
-  const { user, biometrics, accessLogs, tokens, zones, actions } = data
+  const { user, biometrics, accessLogs, tokens, zones, actions, photoUrl } = data
   const bio = biometrics[0]
   const zoneName = (id: string) => zones.find((z) => z.id === id)?.name ?? id
 
@@ -86,7 +88,7 @@ export function UserDetailPage() {
         <div className="rounded-xl border border-border bg-surface p-5 lg:col-span-1">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-4">
-              <Avatar name={user.fullName} size="lg" />
+              <Avatar name={user.fullName} size="lg" photoUrl={photoUrl} />
               <div>
                 <p className="text-base font-semibold text-ink-900">{user.fullName}</p>
                 <p className="text-xs text-text-muted">{user.documentId}</p>

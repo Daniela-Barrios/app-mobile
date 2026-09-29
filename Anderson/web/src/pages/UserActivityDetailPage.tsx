@@ -9,22 +9,24 @@ import {
   accessLogsRepository,
   biometricsRepository,
   eventsRepository,
+  photosRepository,
   tokensRepository,
   usersRepository,
   zonesRepository,
 } from '../repositories'
 
 async function loadUserActivity(userId: string) {
-  const [user, events, tokens, biometrics, accessLogs, zones] = await Promise.all([
+  const [user, events, tokens, biometrics, accessLogs, zones, photos] = await Promise.all([
     usersRepository.get(userId),
     eventsRepository.list(), // ya viene ordenado por occurredAt desc
     tokensRepository.listByUser(userId),
     biometricsRepository.listByUser(userId),
     accessLogsRepository.listByUser(userId),
     zonesRepository.list(),
+    photosRepository.listByUser(userId),
   ])
   const actions = actionsForUser(userId, events, { tokens, biometrics, accessLogs })
-  return { user, actions, tokens, zones }
+  return { user, actions, tokens, zones, photoUrl: photos[0]?.url ?? null }
 }
 
 const ORIGIN_FILTERS: Array<{ value: ActivityOrigin | ''; label: string }> = [
@@ -43,7 +45,7 @@ export function UserActivityDetailPage() {
   if (error) return <p className="text-sm text-danger-500">Error: {error}</p>
   if (!data) return null
 
-  const { user, actions, tokens, zones } = data
+  const { user, actions, tokens, zones, photoUrl } = data
   const filtered = originFilter ? actions.filter((e) => eventOrigin(e) === originFilter) : actions
 
   return (
@@ -54,7 +56,7 @@ export function UserActivityDetailPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface p-5">
         <div className="flex items-center gap-4">
-          <Avatar name={user.fullName} size="lg" />
+          <Avatar name={user.fullName} size="lg" photoUrl={photoUrl} />
           <div>
             <p className="text-base font-semibold text-ink-900">{user.fullName}</p>
             <p className="text-xs text-text-muted">{user.documentId}</p>

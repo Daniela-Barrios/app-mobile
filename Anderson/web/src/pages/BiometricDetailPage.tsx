@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
 import { useSetBreadcrumbLabel } from '../lib/breadcrumbContext'
 import { useAsync } from '../hooks/useAsync'
-import { biometricsRepository, usersRepository, zonesRepository } from '../repositories'
+import { biometricsRepository, photosRepository, usersRepository, zonesRepository } from '../repositories'
 import {
   blockBiometricGlobally,
   setBiometricZoneBlocks,
@@ -11,12 +11,13 @@ import {
 } from '../services/biometricService'
 
 async function loadBiometricDetail(userId: string) {
-  const [user, biometricsForUser, zones] = await Promise.all([
+  const [user, biometricsForUser, zones, photos] = await Promise.all([
     usersRepository.get(userId),
     biometricsRepository.listByUser(userId),
     zonesRepository.list(),
+    photosRepository.listByUser(userId),
   ])
-  return { user, biometric: biometricsForUser[0] ?? null, zones }
+  return { user, biometric: biometricsForUser[0] ?? null, zones, photoUrl: photos[0]?.url ?? null }
 }
 
 export function BiometricDetailPage() {
@@ -37,7 +38,7 @@ export function BiometricDetailPage() {
   if (error) return <p className="text-sm text-danger-500">Error: {error}</p>
   if (!data) return null
 
-  const { user, biometric, zones } = data
+  const { user, biometric, zones, photoUrl } = data
 
   function toggleZone(zoneId: string) {
     setSelectedZones((prev) =>
@@ -77,7 +78,7 @@ export function BiometricDetailPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="rounded-xl border border-border bg-surface p-5 lg:col-span-1">
           <div className="flex items-center gap-4">
-            <Avatar name={user.fullName} size="lg" />
+            <Avatar name={user.fullName} size="lg" photoUrl={photoUrl} />
             <div>
               <p className="text-base font-semibold text-ink-900">{user.fullName}</p>
               <p className="text-xs text-text-muted">{user.documentId}</p>

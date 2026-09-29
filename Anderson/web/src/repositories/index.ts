@@ -29,7 +29,9 @@ export const usersRepository = {
 }
 
 export const photosRepository = {
-  listByUser: (userId: string) => api.get<Photo[]>(`/photos?userId=${userId}`),
+  list: () => api.get<Photo[]>('/photos?_sort=uploadedAt&_order=desc'),
+  listByUser: (userId: string) =>
+    api.get<Photo[]>(`/photos?userId=${userId}&_sort=uploadedAt&_order=desc`),
 }
 
 export const biometricsRepository = {

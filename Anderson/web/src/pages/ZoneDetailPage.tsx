@@ -5,19 +5,21 @@ import { ConfirmDialog } from '../components/ConfirmDialog'
 import { ZoneFormModal, type ZoneFormValues } from '../components/ZoneFormModal'
 import { useAsync } from '../hooks/useAsync'
 import { useSetBreadcrumbLabel } from '../lib/breadcrumbContext'
+import { latestPhotoByUser } from '../lib/photos'
 import { elapsedSince, isSameDay } from '../lib/time'
-import { accessLogsRepository, usersRepository, zonesRepository } from '../repositories'
+import { accessLogsRepository, photosRepository, usersRepository, zonesRepository } from '../repositories'
 import { deactivateZone, reactivateZone, updateZone } from '../services/zoneService'
 import { usersPresentInZone } from './ZonesPage'
 
 async function loadZoneDetail(zoneId: string) {
-  const [zones, accessLogs, users] = await Promise.all([
+  const [zones, accessLogs, users, photos] = await Promise.all([
     zonesRepository.list(),
     accessLogsRepository.list(), // ya viene ordenado por occurredAt desc
     usersRepository.list(),
+    photosRepository.list(),
   ])
   const zone = zones.find((z) => z.id === zoneId) ?? null
-  return { zone, accessLogs, users }
+  return { zone, accessLogs, users, photoByUser: latestPhotoByUser(photos) }
 }
 
 export function ZoneDetailPage() {
@@ -32,7 +34,7 @@ export function ZoneDetailPage() {
   if (error) return <p className="text-sm text-danger-500">Error: {error}</p>
   if (!data || !data.zone) return <p className="text-sm text-danger-500">Zona no encontrada.</p>
 
-  const { zone, accessLogs, users } = data
+  const { zone, accessLogs, users, photoByUser } = data
 
   async function handleEdit(values: ZoneFormValues) {
     setBusy(true)
@@ -152,7 +154,7 @@ export function ZoneDetailPage() {
                   className="flex items-center justify-between gap-3 py-2.5 hover:text-brand-600"
                 >
                   <div className="flex items-center gap-3">
-                    <Avatar name={userName(log.userId)} size="sm" />
+                    <Avatar name={userName(log.userId)} size="sm" photoUrl={photoByUser.get(log.userId)} />
                     <p className="text-sm text-ink-900">{userName(log.userId)}</p>
                   </div>
                   <div className="text-right text-xs text-text-muted">

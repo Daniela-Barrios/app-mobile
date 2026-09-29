@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 function initials(fullName: string): string {
   const parts = fullName.trim().split(/\s+/)
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase()
@@ -12,10 +14,28 @@ const SIZES = {
 export function Avatar({
   name,
   size = 'md',
+  photoUrl,
 }: {
   name: string
   size?: keyof typeof SIZES
+  /** Foto real del usuario (`photos.url`, ver lib/photos.ts). Si no hay, o
+   * si falla al cargar (p. ej. una ruta de semilla sin archivo real), se
+   * muestran las iniciales — como antes. */
+  photoUrl?: string | null
 }) {
+  const [rota, setRota] = useState(false)
+
+  if (photoUrl && !rota) {
+    return (
+      <img
+        src={photoUrl}
+        alt={name}
+        onError={() => setRota(true)}
+        className={`shrink-0 rounded-full object-cover ${SIZES[size]}`}
+      />
+    )
+  }
+
   return (
     <span
       className={`flex shrink-0 items-center justify-center rounded-full bg-brand-50 font-semibold text-brand-600 ${SIZES[size]}`}

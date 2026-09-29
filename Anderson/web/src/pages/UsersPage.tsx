@@ -4,16 +4,18 @@ import { Avatar } from '../components/Avatar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { UserFormModal, type UserFormValues } from '../components/UserFormModal'
 import { useAsync } from '../hooks/useAsync'
-import { biometricsRepository, usersRepository } from '../repositories'
+import { latestPhotoByUser } from '../lib/photos'
+import { biometricsRepository, photosRepository, usersRepository } from '../repositories'
 import { createUser, deactivateUser, reactivateUser, updateUser } from '../services/userService'
 import type { User } from '../types'
 
 async function loadUsers() {
-  const [users, biometrics] = await Promise.all([
+  const [users, biometrics, photos] = await Promise.all([
     usersRepository.list(),
     biometricsRepository.list(),
+    photosRepository.list(),
   ])
-  return { users, biometrics }
+  return { users, biometrics, photoByUser: latestPhotoByUser(photos) }
 }
 
 export function UsersPage() {
@@ -42,7 +44,7 @@ export function UsersPage() {
   if (error) return <p className="text-sm text-danger-500">Error: {error}</p>
   if (!data) return null
 
-  const { biometrics } = data
+  const { biometrics, photoByUser } = data
 
   async function handleCreate(values: UserFormValues) {
     setBusy(true)
@@ -135,7 +137,7 @@ export function UsersPage() {
                       to={`/usuarios/${user.id}`}
                       className="flex items-center gap-3 text-ink-900 hover:text-brand-600"
                     >
-                      <Avatar name={user.fullName} size="sm" />
+                      <Avatar name={user.fullName} size="sm" photoUrl={photoByUser.get(user.id)} />
                       <span>
                         {user.fullName}
                         {isDeleted && (

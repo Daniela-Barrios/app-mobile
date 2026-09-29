@@ -3,22 +3,26 @@ import { Link } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
 import { useAsync } from '../hooks/useAsync'
 import { actionsForUser, eventOrigin } from '../lib/activity'
+import { latestPhotoByUser } from '../lib/photos'
 import {
   accessLogsRepository,
   biometricsRepository,
   eventsRepository,
+  photosRepository,
   tokensRepository,
   usersRepository,
 } from '../repositories'
 
 async function loadActivityOverview() {
-  const [users, events, tokens, biometrics, accessLogs] = await Promise.all([
+  const [users, events, tokens, biometrics, accessLogs, photos] = await Promise.all([
     usersRepository.list(),
     eventsRepository.list(), // ya viene ordenado por occurredAt desc
     tokensRepository.list(),
     biometricsRepository.list(),
     accessLogsRepository.list(),
+    photosRepository.list(),
   ])
+  const photoByUser = latestPhotoByUser(photos)
 
   const rows = users.map((user) => {
     const actions = actionsForUser(user.id, events, { tokens, biometrics, accessLogs })
@@ -26,6 +30,7 @@ async function loadActivityOverview() {
     const dashboardCount = actions.length - mobileCount
     return {
       user,
+      photoUrl: photoByUser.get(user.id),
       total: actions.length,
       mobileCount,
       dashboardCount,
@@ -95,14 +100,14 @@ export function ActivityLogPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map(({ user, total, mobileCount, dashboardCount, lastAt }) => (
+            {filtered.map(({ user, photoUrl, total, mobileCount, dashboardCount, lastAt }) => (
               <tr key={user.id} className="border-b border-border last:border-0 hover:bg-surface-muted">
                 <td className="px-5 py-2.5">
                   <Link
                     to={`/actividad/${user.id}`}
                     className="flex items-center gap-3 text-ink-900 hover:text-brand-600"
                   >
-                    <Avatar name={user.fullName} size="sm" />
+                    <Avatar name={user.fullName} size="sm" photoUrl={photoUrl} />
                     <span>{user.fullName}</span>
                   </Link>
                 </td>
