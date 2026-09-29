@@ -7,9 +7,11 @@ el control de cámaras y la conexión de todo el ecosistema quedan para las fase
 
 **Tecnología:** Expo (React Native + TypeScript) con Expo Router. Se eligió sobre una PWA porque los
 ítems 2 y 3 de la Fase 0 (biométricos, reconocimiento facial) casi siempre necesitan acceso nativo a
-cámara y sensores que un navegador no da igual. Con Expo Go se prueba en un teléfono real sin
-instalar Android Studio ni Xcode — importante porque este equipo (el de Daniela) no tiene esas
-herramientas.
+cámara y sensores que un navegador no da igual. El resultado es una **app propia instalable** (APK),
+sin depender de ninguna otra app — se compila en la nube con EAS Build porque este equipo no tiene
+Android Studio/Java para compilarla en local (ver «Cómo instalarla en el teléfono» abajo). Expo Go
+solo se usa como atajo mientras se desarrolla, para no recompilar en cada cambio — nunca es el
+producto final.
 
 ## Qué hay hecho de la Fase 0
 
@@ -44,33 +46,39 @@ Hay DOS cosas distintas mezcladas en ese punto, y solo la primera está hecha:
   cámara, el permiso de cámara del sistema y la huella/rostro del sistema solo se pueden probar de
   verdad en un teléfono. Necesito que alguien lo abra en Expo Go y confirme que funciona.
 
-## Cómo probarlo
+## Cómo instalarla en el teléfono (app propia, sin Expo Go)
+
+La app final se instala como un APK propio, con su propio ícono — **no depende de tener Expo Go
+instalado**. Se compila en la nube de EAS (gratis), porque este equipo no tiene Android
+Studio/Java para compilarla en local:
 
 ```bash
 cd Claude/app-visitante
+npx eas-cli@latest login          # una sola vez, con tu cuenta de Expo (gratis)
+npx eas-cli@latest build --platform android --profile preview
+```
+
+Tarda 10-20 min (más la cola del plan gratis). Al terminar, entrega un enlace de descarga del
+`.apk`: se abre desde el navegador del teléfono y se instala como cualquier otra app (Android puede
+pedir permitir «instalar de origen desconocido» la primera vez, por no venir de Play Store).
+
+## Para desarrollar (con Expo Go, más rápido de iterar)
+
+Mientras se construye, es más cómodo probar los cambios sin recompilar cada vez, con **Expo Go**
+(app gratis de la tienda) como visor temporal — el APK final de arriba no la necesita:
+
+```bash
 npm install
 npm run start       # muestra un código QR: ábrelo con la app Expo Go en el teléfono
 # o, para verlo rápido en el navegador (sin cámara real):
 npm run web
 ```
 
-Con **Expo Go** (se instala gratis desde la Play Store / App Store): abrir la app, escanear el QR
-que sale en la terminal, y ya carga PGD Visitante en el teléfono, sin compilar nada aparte.
-
 ## Comandos
 
 ```bash
-npm run start        # servidor de desarrollo (QR para Expo Go)
+npm run start        # servidor de desarrollo (QR para Expo Go, solo para desarrollar)
 npm run web           # vista previa en el navegador
 npm run typecheck     # tsc --noEmit
 npm run lint          # expo lint
 ```
-
-## Nota sobre la instalación de paquetes
-
-`npx expo install <paquete>` a veces choca por una dependencia (`react-dom`) que pide una versión
-más nueva de la que trae la plantilla de Expo SDK 57 — se resolvió instalando con
-`--legacy-peer-deps`. Si `npx expo lint` o `npx expo start` alguna vez dicen "Cannot find module
-'eslint'" o algo parecido justo después de instalar un paquete nuevo, es que quedó en una carpeta
-`node_modules` anidada en vez de la de la raíz — corre el mismo comando una segunda vez, o instala
-ese paquete puntual con `npm install <paquete> --legacy-peer-deps`.
