@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ChangeEvent, CSSProperties, FormEvent, ReactNode } from 'react';
+import type { CSSProperties, FormEvent, ReactNode } from 'react';
 import {
   Accessibility,
   ArrowLeft,
@@ -9,6 +9,7 @@ import {
   ChevronDown,
   CircleHelp,
   Contact,
+  CreditCard,
   DoorOpen,
   LifeBuoy,
   MessagesSquare,
@@ -36,6 +37,15 @@ const VIDEO_CON_SONIDO = true;
 
 const EMPRESAS = ['Fraco', 'Kabil', 'Panamericana', 'Otra'];
 const MOTIVOS = ['Visita', 'Entrega de mercancía', 'Proveedor', 'Entrevista', 'Otro'];
+
+const TIPOS_DOCUMENTO = [
+  'Cédula de ciudadanía',
+  'Tarjeta de identidad',
+  'Cédula de extranjería',
+  'Pasaporte',
+] as const;
+
+type TipoDocumento = (typeof TIPOS_DOCUMENTO)[number];
 
 const PREGUNTAS_FRECUENTES = [
   {
@@ -124,21 +134,106 @@ export function Bienvenida({
   onEntrar?: () => void;
   lector?: boolean;
 }) {
-  const [entro, setEntro] = useState(false);
+  const [fase, setFase] = useState<'bienvenida' | 'login' | 'panel'>('bienvenida');
+  const [documentoSesion, setDocumentoSesion] = useState<{ tipo: TipoDocumento; numero: string } | null>(null);
 
-  if (entro) {
-    return <Panel kiosco={kiosco} onInicio={() => setEntro(false)} />;
+  if (fase === 'panel' && documentoSesion) {
+    return (
+      <Panel
+        kiosco={kiosco}
+        documentoSesion={documentoSesion}
+        onInicio={() => {
+          setDocumentoSesion(null);
+          setFase('bienvenida');
+        }}
+      />
+    );
+  }
+
+  if (fase === 'login') {
+    return (
+      <LoginDocumento
+        tema={TEMA_NORMAL}
+        onCancelar={() => setFase('bienvenida')}
+        onEntrar={(documento) => {
+          setDocumentoSesion(documento);
+          setFase('panel');
+          onEntrar?.();
+        }}
+      />
+    );
   }
 
   return (
     <BienvenidaVigilante
       kiosco={kiosco}
       lector={lector}
-      onSiguiente={() => {
-        setEntro(true);
-        onEntrar?.();
-      }}
+      onSiguiente={() => setFase('login')}
     />
+  );
+}
+
+/* ================================ LOGIN ================================= */
+
+function LoginDocumento({
+  tema,
+  onCancelar,
+  onEntrar,
+}: {
+  tema: Tema;
+  onCancelar: () => void;
+  onEntrar: (documento: { tipo: TipoDocumento; numero: string }) => void;
+}) {
+  const [tipo, setTipo] = useState<TipoDocumento>('Cédula de ciudadanía');
+  const [numero, setNumero] = useState('');
+  const [error, setError] = useState('');
+
+  const entrar = (e: FormEvent) => {
+    e.preventDefault();
+    const limpio = numero.replace(/\D/g, '');
+    if (!limpio) {
+      setError('Escribe tu número de documento para continuar.');
+      return;
+    }
+    if (limpio.length < 5) {
+      setError('El número de documento parece demasiado corto.');
+      return;
+    }
+    setError('');
+    onEntrar({ tipo, numero: limpio });
+  };
+
+  const colorError = tema.fondo === '#000000' ? '#FCA5A5' : '#B91C1C';
+
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center p-5" style={{ background: tema.fondo, color: tema.texto }}>
+      <form onSubmit={entrar} className="w-full max-w-md">
+        <Tarjeta tema={tema}>
+          <div className="flex flex-col items-center text-center gap-3 py-2">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: tema.acento, color: tema.acentoTexto }}>
+              <CreditCard size={32} />
+            </div>
+            <div>
+              <p className="text-[25px] font-black">Identificación</p>
+              <p className="text-[14px] mt-1" style={{ color: tema.sub }}>Antes de continuar, ingresa tu documento.</p>
+            </div>
+          </div>
+          <Campo tema={tema} etiqueta="Tipo de documento">
+            <select style={estiloInput(tema)} value={tipo} onChange={(e) => setTipo(e.target.value as TipoDocumento)}>
+              {TIPOS_DOCUMENTO.map((tipoDocumento) => <option key={tipoDocumento} value={tipoDocumento}>{tipoDocumento}</option>)}
+            </select>
+          </Campo>
+          <Campo tema={tema} etiqueta="Número de documento">
+            <input style={{ ...estiloInput(tema), fontSize: 20, fontWeight: 700, letterSpacing: 1 }} inputMode="numeric" autoFocus value={numero} onChange={(e) => setNumero(e.target.value.replace(/\D/g, ''))} placeholder="Escribe tu documento" maxLength={15} />
+          </Campo>
+          <div className="rounded-xl p-3 text-[12px]" style={{ background: tema.fondo === '#000000' ? '#111111' : '#F8FAFC', color: tema.sub }}>
+          </div>
+          {error && <p className="text-[14px] font-bold text-left" style={{ color: colorError }}>{error}</p>}
+          <BotonPrimario tema={tema} tipo="submit">Continuar</BotonPrimario>
+          <button type="button" onClick={onCancelar} className="rounded-xl py-3 px-5 font-bold text-[15px]" style={{ border: `1px solid ${tema.borde}`, color: tema.texto }}>Volver</button>
+        </Tarjeta>
+      </form>
+    </div>
   );
 }
 
@@ -274,12 +369,38 @@ const TITULOS: Record<Vista, string> = {
   comunicacion: 'Centro de comunicación',
 };
 
-function Panel({ kiosco, onInicio }: { kiosco: Kiosco; onInicio: () => void }) {
+type DatosRegistro = {
+  tipoDocumento: TipoDocumento;
+  nombre: string;
+  documento: string;
+  empresa: string;
+  telefono: string;
+};
+
+type RegistroSesion = {
+  datos: DatosRegistro;
+  foto: string;
+  token: string;
+  segundos: number;
+};
+
+const generarToken = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+function Panel({
+  kiosco,
+  documentoSesion,
+  onInicio,
+}: {
+  kiosco: Kiosco;
+  documentoSesion: { tipo: TipoDocumento; numero: string };
+  onInicio: () => void;
+}) {
   const ahora = useAhora();
   const [vista, setVista] = useState<Vista>('menu');
   const [grande, setGrande] = useState(false);
   const [contraste, setContraste] = useState(false);
   const [voz, setVoz] = useState(false);
+  const [registroActivo, setRegistroActivo] = useState<RegistroSesion | null>(null);
   const tema = contraste ? TEMA_CONTRASTE : TEMA_NORMAL;
 
   useEffect(() => {
@@ -288,7 +409,41 @@ function Panel({ kiosco, onInicio }: { kiosco: Kiosco; onInicio: () => void }) {
 
   useEffect(() => () => window.speechSynthesis?.cancel(), []);
 
-  const volver = () => (vista === 'menu' ? onInicio() : setVista('menu'));
+  // El token vive en la sesión completa del Panel, no dentro de VistaRegistro.
+  // Así no se pierde al volver al menú y sigue cambiando cada 15 segundos.
+  useEffect(() => {
+    if (!registroActivo) return;
+
+    const intervalo = window.setInterval(() => {
+      setRegistroActivo((actual) => {
+        if (!actual) return actual;
+
+        if (actual.segundos <= 1) {
+          return {
+            ...actual,
+            token: generarToken(),
+            segundos: 15,
+          };
+        }
+
+        return {
+          ...actual,
+          segundos: actual.segundos - 1,
+        };
+      });
+    }, 1000);
+
+    return () => window.clearInterval(intervalo);
+  }, [Boolean(registroActivo)]);
+
+  const cerrarSesion = () => {
+    // Al cerrar la sesión se invalida inmediatamente el registro y su token.
+    setRegistroActivo(null);
+    setVista('menu');
+    onInicio();
+  };
+
+  const volver = () => (vista === 'menu' ? cerrarSesion() : setVista('menu'));
 
   return (
     <div
@@ -304,7 +459,7 @@ function Panel({ kiosco, onInicio }: { kiosco: Kiosco; onInicio: () => void }) {
           className="flex items-center gap-1 rounded-xl border border-white/40 px-3 py-2 text-[15px] font-bold"
         >
           <ArrowLeft size={18} aria-hidden="true" />
-          {vista === 'menu' ? 'Inicio' : 'Atrás'}
+          {vista === 'menu' ? 'Cerrar sesión' : 'Atrás'}
         </button>
         <div className="flex-1 min-w-0 text-left">
           <p className="text-[12px] text-white/70 truncate">{kiosco.sede}</p>
@@ -317,12 +472,29 @@ function Panel({ kiosco, onInicio }: { kiosco: Kiosco; onInicio: () => void }) {
       </header>
 
       <main className="flex-1 overflow-y-auto p-4">
-        {vista === 'menu' && <Menu tema={tema} ir={setVista} />}
+        {vista === 'menu' && (
+          <Menu
+            tema={tema}
+            ir={setVista}
+            registroActivo={registroActivo}
+          />
+        )}
         {vista === 'comunicacion' && <VistaComunicacion tema={tema} ir={setVista} />}
         {vista === 'llamada_voz' && <VistaSimulacionLlamada tema={tema} tipo="voz" alTerminar={() => setVista('menu')} />}
         {vista === 'llamada_video' && <VistaSimulacionLlamada tema={tema} tipo="video" alTerminar={() => setVista('menu')} />}
         {vista === 'vigilante' && <VistaVigilante tema={tema} voz={voz} />}
-        {vista === 'registro' && <VistaRegistro tema={tema} alTerminar={() => setVista('menu')} />}
+        {vista === 'registro' && (
+          <VistaRegistro
+            tema={tema}
+            documentoSesion={documentoSesion}
+            registroActivo={registroActivo}
+            alRegistrar={(registro) => {
+              setRegistroActivo(registro);
+            }}
+            alTerminar={() => setVista('menu')}
+            alCerrarSesion={cerrarSesion}
+          />
+        )}
         {vista === 'ingreso' && <VistaIngreso tema={tema} alTerminar={() => setVista('menu')} />}
         {vista === 'faq' && <VistaFAQ tema={tema} />}
         {vista === 'ayuda' && <VistaAyuda tema={tema} ir={setVista} />}
@@ -356,10 +528,18 @@ function Panel({ kiosco, onInicio }: { kiosco: Kiosco; onInicio: () => void }) {
 
 /* ---------------------------------- Menú ---------------------------------- */
 
-function Menu({ tema, ir }: { tema: Tema; ir: (v: Vista) => void }) {
+function Menu({
+  tema,
+  ir,
+  registroActivo,
+}: {
+  tema: Tema;
+  ir: (v: Vista) => void;
+  registroActivo: RegistroSesion | null;
+}) {
   const items: { v: Vista; titulo: string; sub: string; Icono: typeof Bot }[] = [
     { v: 'comunicacion', titulo: 'Comunicación', sub: 'Llama, haz videollamada o chatea', Icono: Phone },
-    { v: 'registro', titulo: 'Registrarme', sub: 'Tus datos y una foto rápida', Icono: Contact },
+    { v: 'registro', titulo: 'Registrarme', sub: 'Completa tus datos y toma una foto', Icono: Contact },
     { v: 'ingreso', titulo: 'Solicitar ingreso', sub: 'Pide permiso para entrar a la bodega', Icono: DoorOpen },
     { v: 'faq', titulo: 'Preguntas frecuentes', sub: 'Requisitos, horarios, carnet y más', Icono: CircleHelp },
     { v: 'ayuda', titulo: 'Ayuda', sub: 'Cómo funciona, paso a paso', Icono: LifeBuoy },
@@ -369,6 +549,51 @@ function Menu({ tema, ir }: { tema: Tema; ir: (v: Vista) => void }) {
 
   return (
     <div className="flex flex-col gap-3">
+      <button
+        onClick={() => ir('vigilante')}
+        className="rounded-2xl p-5 text-left flex flex-col gap-6"
+        style={{ background: tema.acento, color: tema.acentoTexto, border: `1px solid ${tema.borde}` }}
+      >
+        <MessagesSquare size={30} aria-hidden="true" />
+        <div>
+          <p className="text-[18px] font-bold">Hablar con el vigilante</p>
+          <p className="text-[12px] opacity-90 mt-1">Escríbele y resuelve tu consulta</p>
+        </div>
+      </button>
+
+      {registroActivo && (
+        <button
+          onClick={() => ir('registro')}
+          className="relative overflow-hidden rounded-2xl p-4 text-left"
+          style={{
+            background: tema.cabecera,
+            color: '#FFFFFF',
+            border: `2px solid ${tema.acento}`,
+            boxShadow: `0 8px 25px rgba(0,0,0,.12)`,
+          }}
+        >
+          <div className="absolute -right-10 -top-10 w-28 h-28 rounded-full opacity-20" style={{ background: tema.acento }} />
+          <div className="relative flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[12px] font-bold uppercase tracking-widest text-white/70">
+                Código activo
+              </p>
+              <p className="text-[15px] font-bold mt-1 truncate">{registroActivo.datos.nombre}</p>
+              <p className="text-[11px] text-white/60 mt-1">
+                Se actualiza automáticamente
+              </p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-[11px] font-bold text-white/60">TOKEN</p>
+              <p className="text-[28px] font-black tracking-[4px]" style={{ color: tema.acento === '#1D4ED8' ? '#93C5FD' : tema.acento }}>
+                {registroActivo.token}
+              </p>
+              <p className="text-[10px] font-bold text-white/60">{registroActivo.segundos}s</p>
+            </div>
+          </div>
+        </button>
+      )}
+
       <div className="grid grid-cols-2 gap-3">
         {items.map(({ v, titulo, sub, Icono }) => (
           <button
@@ -387,6 +612,18 @@ function Menu({ tema, ir }: { tema: Tema; ir: (v: Vista) => void }) {
           </button>
         ))}
       </div>
+
+      <button
+        type="button"
+        onClick={() => ir('registro')}
+        className="rounded-2xl p-4 text-left"
+        style={{ background: tema.tarjeta, border: `1px solid ${tema.borde}`, color: tema.texto }}
+      >
+        <p className="text-[14px] font-bold">Administrar mi registro</p>
+        <p className="text-[11px] mt-1" style={{ color: tema.sub }}>
+          Consulta tu código o finaliza tu registro activo.
+        </p>
+      </button>
     </div>
   );
 }
@@ -647,57 +884,198 @@ function VistaVigilante({ tema, voz }: { tema: Tema; voz: boolean }) {
 
 /* -------------------------------- Registrarme ------------------------------- */
 
-function VistaRegistro({ tema, alTerminar }: { tema: Tema; alTerminar: () => void }) {
-  const [datos, setDatos] = useState({ nombre: '', documento: '', empresa: '', telefono: '' });
-  const [foto, setFoto] = useState<string | null>(null);
+function VistaRegistro({
+  tema,
+  documentoSesion,
+  registroActivo,
+  alRegistrar,
+  alTerminar,
+  alCerrarSesion,
+}: {
+  tema: Tema;
+  documentoSesion: { tipo: TipoDocumento; numero: string };
+  registroActivo: RegistroSesion | null;
+  alRegistrar: (registro: RegistroSesion) => void;
+  alTerminar: () => void;
+  alCerrarSesion: () => void;
+}) {
+  const [datos, setDatos] = useState<DatosRegistro>(
+    registroActivo?.datos ?? { tipoDocumento: documentoSesion.tipo, nombre: '', documento: documentoSesion.numero, empresa: '', telefono: '' },
+  );
+  const [foto, setFoto] = useState<string | null>(registroActivo?.foto ?? null);
   const [error, setError] = useState('');
-  const [listo, setListo] = useState(false);
+  const [camaraAbierta, setCamaraAbierta] = useState(false);
+  const [camaraLista, setCamaraLista] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
-  const cambiar = (k: keyof typeof datos, v: string) => setDatos((d) => ({ ...d, [k]: v }));
+  const cambiar = (k: keyof DatosRegistro, v: string) => setDatos((d) => ({ ...d, [k]: v }));
 
-  const tomarFoto = (e: ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const lector = new FileReader();
-    lector.onload = () => setFoto(String(lector.result));
-    lector.readAsDataURL(f);
+  const detenerCamara = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setCamaraLista(false);
+    setCamaraAbierta(false);
   };
 
-  const enviar = (e: FormEvent) => {
+  const abrirCamara = async () => {
+    setError('');
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError('Tu navegador no permite acceder a la cámara. Prueba usando Chrome desde localhost.');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      setCamaraAbierta(true);
+      window.setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().then(() => setCamaraLista(true)).catch(() => undefined);
+        }
+      }, 50);
+    } catch (err) {
+      console.error(err);
+      setError('No se pudo abrir la cámara. Revisa que hayas permitido el acceso a la cámara.');
+    }
+  };
+
+  const capturarFoto = () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) {
+      setError('La cámara todavía no está lista. Espera un momento.');
+      return;
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const contexto = canvas.getContext('2d');
+    if (!contexto) {
+      setError('No fue posible capturar la imagen.');
+      return;
+    }
+    contexto.translate(canvas.width, 0);
+    contexto.scale(-1, 1);
+    contexto.drawImage(video, 0, 0, canvas.width, canvas.height);
+    setFoto(canvas.toDataURL('image/jpeg', 0.85));
+    setError('');
+    detenerCamara();
+  };
+
+  const guardarRegistro = (e: FormEvent) => {
     e.preventDefault();
-    if (!datos.nombre.trim() || !datos.documento.trim()) {
-      setError('Escribe tu nombre y tu número de documento.');
+    if (!datos.nombre.trim()) {
+      setError('Escribe tu nombre completo.');
       return;
     }
     if (!foto) {
-      setError('Toma una foto rápida para continuar.');
+      setError('Toma una foto para continuar.');
       return;
     }
+    const registro: RegistroSesion = {
+      datos: { ...datos, tipoDocumento: documentoSesion.tipo, documento: documentoSesion.numero },
+      foto,
+      token: registroActivo?.token ?? generarToken(),
+      segundos: registroActivo?.segundos ?? 15,
+    };
     setError('');
-    setListo(true);
+    alRegistrar(registro);
   };
 
-  if (listo) {
+  useEffect(() => () => {
+    if (streamRef.current) streamRef.current.getTracks().forEach((track) => track.stop());
+  }, []);
+
+  if (registroActivo) {
+    const porcentaje = (registroActivo.segundos / 15) * 100;
     return (
-      <Exito
-        tema={tema}
-        titulo="¡Registro completado!"
-        detalle="Ya puedes solicitar tu ingreso desde el menú."
-        alVolver={alTerminar}
-      />
+      <div className="flex flex-col gap-4">
+        <Tarjeta tema={tema}>
+          <div className="text-center">
+            <div className="mx-auto mb-3 w-14 h-14 rounded-full flex items-center justify-center" style={{ background: tema.acento, color: tema.acentoTexto }}><Check size={30} /></div>
+            <p className="text-[22px] font-bold">Registro activo</p>
+            <p className="text-[14px] mt-1" style={{ color: tema.sub }}>Tu código permanece activo durante esta sesión.</p>
+          </div>
+          <div className="rounded-2xl p-4" style={{ background: tema.fondo === '#000000' ? '#111111' : '#F8FAFC', border: `1px solid ${tema.borde}` }}>
+            <p className="text-[12px] font-bold uppercase tracking-widest mb-4" style={{ color: tema.sub }}>Persona registrada</p>
+            <div className="flex items-center gap-4">
+              <img src={registroActivo.foto} alt="Foto del visitante" className="w-20 h-20 rounded-full object-cover shrink-0" style={{ border: `3px solid ${tema.acento}` }} />
+              <div className="min-w-0 text-left">
+                <p className="text-[19px] font-bold truncate">{registroActivo.datos.nombre}</p>
+                <p className="text-[13px] mt-1" style={{ color: tema.sub }}>{registroActivo.datos.tipoDocumento}: {registroActivo.datos.documento}</p>
+                {registroActivo.datos.empresa && <p className="text-[13px]" style={{ color: tema.sub }}>Empresa: {registroActivo.datos.empresa}</p>}
+                {registroActivo.datos.telefono && <p className="text-[13px]" style={{ color: tema.sub }}>Teléfono: {registroActivo.datos.telefono}</p>}
+              </div>
+            </div>
+          </div>
+          <div className="relative overflow-hidden rounded-[28px] p-6 text-center" style={{ background: `linear-gradient(145deg, ${tema.cabecera} 0%, ${tema.cabecera} 55%, ${tema.acento} 180%)`, border: `1px solid ${tema.acento}`, boxShadow: '0 12px 35px rgba(0,0,0,.18)' }}>
+            <div className="absolute -right-12 -top-12 w-32 h-32 rounded-full opacity-20" style={{ background: tema.acento }} />
+            <div className="relative">
+              <div className="flex items-center justify-center gap-2 text-white/70"><span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ background: '#22C55E' }} /><span className="text-[11px] font-bold uppercase tracking-[0.22em]">Código activo</span></div>
+              <p className="text-[11px] font-semibold text-white/60 mt-4">PRESENTA ESTE CÓDIGO</p>
+              <p className="text-[52px] leading-none font-black tracking-[9px] mt-2 text-white" style={{ textShadow: '0 3px 15px rgba(0,0,0,.25)' }}>{registroActivo.token}</p>
+              <div className="mt-6"><div className="flex items-center justify-between text-[11px] font-bold text-white/60 mb-2"><span>Código temporal</span><span>{registroActivo.segundos}s</span></div><div className="h-2 rounded-full overflow-hidden bg-white/20"><div className="h-full rounded-full transition-all duration-1000" style={{ width: `${porcentaje}%`, background: '#FFFFFF' }} /></div></div>
+              <p className="text-[12px] text-white/70 mt-4">Se renueva automáticamente cada 15 segundos</p>
+            </div>
+          </div>
+          <div className="rounded-xl p-4 text-center" style={{ background: tema.fondo === '#000000' ? '#1A1A1A' : '#EFF6FF', color: tema.sub }}><p className="text-[14px] font-semibold">Presenta el código actual al vigilante para validar tu registro.</p></div>
+          <BotonPrimario tema={tema} onClick={alTerminar}>Volver al menú</BotonPrimario>
+          <button
+            type="button"
+            onClick={alCerrarSesion}
+            className="rounded-xl py-3 px-5 font-bold text-[15px]"
+            style={{
+              border: `1px solid ${tema.borde}`,
+              color: tema.texto,
+              background: tema.tarjeta,
+            }}
+          >
+            Cerrar sesión y desactivar registro
+          </button>
+        </Tarjeta>
+      </div>
     );
   }
 
-  const colorError = tema.fondo === '#000000' ? '#FCA5A5' : '#B91C1C';
 
   return (
-    <form onSubmit={enviar}>
+    <form onSubmit={guardarRegistro}>
       <Tarjeta tema={tema}>
+        <Campo tema={tema} etiqueta="Tipo de documento">
+          <div
+            className="flex items-center gap-3 rounded-xl px-4 py-3"
+            style={{ background: tema.fondo === '#000000' ? '#111111' : '#F8FAFC', border: `1px solid ${tema.borde}` }}
+          >
+            <CreditCard size={20} style={{ color: tema.acento }} />
+            <span className="font-bold">{datos.tipoDocumento}</span>
+          </div>
+        </Campo>
+
+        <Campo tema={tema} etiqueta="Número de documento">
+          <div className="relative">
+            <input
+              style={{ ...estiloInput(tema), paddingRight: 110, opacity: 0.78 }}
+              value={datos.documento}
+              readOnly
+              aria-readonly="true"
+            />
+            <span
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full px-3 py-1 text-[11px] font-bold"
+              style={{ background: tema.fondo === '#000000' ? '#27272A' : '#E2E8F0', color: tema.sub }}
+            >
+              Bloqueado
+            </span>
+          </div>
+        </Campo>
+
         <Campo tema={tema} etiqueta="Nombre completo">
           <input style={estiloInput(tema)} value={datos.nombre} onChange={(e) => cambiar('nombre', e.target.value)} autoComplete="name" />
-        </Campo>
-        <Campo tema={tema} etiqueta="Número de documento">
-          <input style={estiloInput(tema)} inputMode="numeric" value={datos.documento} onChange={(e) => cambiar('documento', e.target.value.replace(/\D/g, ''))} />
         </Campo>
         <Campo tema={tema} etiqueta="Empresa (opcional)">
           <input style={estiloInput(tema)} value={datos.empresa} onChange={(e) => cambiar('empresa', e.target.value)} />
@@ -710,15 +1088,35 @@ function VistaRegistro({ tema, alTerminar }: { tema: Tema; alTerminar: () => voi
           <span className="text-[13px] font-bold text-left" style={{ color: tema.sub }}>
             Foto rápida
           </span>
-          {foto && <img src={foto} alt="Tu foto" className="w-32 h-32 rounded-2xl object-cover self-center" />}
-          <label
-            className="rounded-xl py-3 font-bold text-[15px] flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-95"
-            style={{ border: `1px dashed ${tema.acento}`, color: tema.acento }}
-          >
-            <Camera size={20} />
-            {foto ? 'Tomar otra foto' : 'Tomar foto'}
-            <input type="file" accept="image/*" capture="user" onChange={tomarFoto} className="hidden" />
-          </label>
+          {foto && (
+            <div className="flex flex-col items-center gap-3">
+              <img src={foto} alt="Foto tomada" className="w-40 h-40 rounded-2xl object-cover" />
+              <button
+                type="button"
+                onClick={abrirCamara}
+                className="font-bold text-[14px]"
+                style={{ color: tema.acento }}
+              >
+                Tomar otra foto
+              </button>
+            </div>
+          )}
+
+          {!foto && (
+            <button
+              type="button"
+              onClick={abrirCamara}
+              className="rounded-xl py-4 font-bold text-[16px] flex items-center justify-center gap-2 cursor-pointer"
+              style={{
+                border: `1px dashed ${tema.acento}`,
+                color: tema.acento,
+                background: tema.tarjeta,
+              }}
+            >
+              <Camera size={22} />
+              Tomar foto
+            </button>
+          )}
         </div>
 
         {error && (
@@ -730,6 +1128,58 @@ function VistaRegistro({ tema, alTerminar }: { tema: Tema; alTerminar: () => voi
           Guardar registro
         </BotonPrimario>
       </Tarjeta>
+
+      {camaraAbierta && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.85)' }}
+        >
+          <div
+            className="w-full max-w-lg rounded-3xl p-4 flex flex-col gap-4"
+            style={{ background: tema.tarjeta, border: `1px solid ${tema.borde}` }}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[18px] font-bold">Tomar foto</p>
+                <p className="text-[12px]" style={{ color: tema.sub }}>
+                  Mira a la cámara y toca el botón cuando estés listo.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={detenerCamara}
+                className="rounded-xl px-3 py-2 font-bold"
+                style={{ border: `1px solid ${tema.borde}`, color: tema.texto }}
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="relative overflow-hidden rounded-2xl bg-black aspect-video">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+                style={{ transform: 'scaleX(-1)' }}
+              />
+              <div className="absolute inset-5 rounded-3xl border-2 border-white/40 pointer-events-none" />
+            </div>
+
+            <button
+              type="button"
+              onClick={capturarFoto}
+              disabled={!camaraLista}
+              className="rounded-2xl py-4 font-bold text-[17px] flex items-center justify-center gap-2 disabled:opacity-50"
+              style={{ background: tema.acento, color: tema.acentoTexto }}
+            >
+              <Camera size={24} />
+              {camaraLista ? 'Tomar foto' : 'Preparando cámara...'}
+            </button>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
@@ -1102,7 +1552,7 @@ function VistaSimulacionLlamada({ tema, tipo, alTerminar }: { tema: Tema; tipo: 
             </button>
           )}
 
-          {/* Botón de Colgar (Destacado) */}
+          {/* Botón de Colgar (Destacado) dafaecdacedasdasda */}
           <button
             onClick={colgar}
             className="w-16 h-16 rounded-full flex items-center justify-center text-white bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30 transition-all duration-300 hover:scale-105"
