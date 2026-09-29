@@ -7,6 +7,7 @@ export const ROUTE_LABELS: Record<string, string> = {
   '/accesos': 'Accesos',
   '/zonas': 'Zonas',
   '/camaras': 'Cámaras',
+  '/actividad': 'Registro de actividad',
   '/eventos': 'Eventos / Auditoría',
   '/vigilante': 'Vigilante virtual',
   '/fase-a': 'Fase A (preparación)',

@@ -5,12 +5,14 @@ import './index.css'
 import { Layout } from './Layout.tsx'
 import { BreadcrumbProvider } from './lib/breadcrumbContext.tsx'
 import { AccessLogsPage } from './pages/AccessLogsPage.tsx'
+import { ActivityLogPage } from './pages/ActivityLogPage.tsx'
 import { BiometricDetailPage } from './pages/BiometricDetailPage.tsx'
 import { BiometricsPage } from './pages/BiometricsPage.tsx'
 import { CamerasPage } from './pages/CamerasPage.tsx'
 import { DashboardPage } from './pages/DashboardPage.tsx'
 import { GuardPage } from './pages/GuardPage.tsx'
 import { PlaceholderPage } from './pages/PlaceholderPage.tsx'
+import { UserActivityDetailPage } from './pages/UserActivityDetailPage.tsx'
 import { UserDetailPage } from './pages/UserDetailPage.tsx'
 import { UsersPage } from './pages/UsersPage.tsx'
 import { ZoneDetailPage } from './pages/ZoneDetailPage.tsx'
@@ -32,6 +34,8 @@ createRoot(document.getElementById('root')!).render(
             <Route path="zonas" element={<ZonesPage />} />
             <Route path="zonas/:zoneId" element={<ZoneDetailPage />} />
             <Route path="camaras" element={<CamerasPage />} />
+            <Route path="actividad" element={<ActivityLogPage />} />
+            <Route path="actividad/:userId" element={<UserActivityDetailPage />} />
             {/* Oculto del sidebar por ahora (ver components/Sidebar.tsx), pero
                 se dejan las rutas vivas por si se reactiva el grupo Monitoreo. */}
             <Route

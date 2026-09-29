@@ -10,6 +10,7 @@ const DETAIL_FALLBACK_TITLES: Record<string, string> = {
   '/usuarios/': 'Detalle de usuario',
   '/biometria/': 'Detalle biométrico',
   '/zonas/': 'Detalle de zona',
+  '/actividad/': 'Actividad del usuario',
 }
 
 export function Layout() {

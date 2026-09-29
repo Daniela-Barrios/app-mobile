@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
+  ActivityIcon,
   CameraIcon,
   CloseIcon,
   FingerprintIcon,
@@ -41,6 +42,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: '/accesos', label: 'Accesos', icon: ListIcon },
       { to: '/zonas', label: 'Zonas', icon: MapPinIcon },
       { to: '/camaras', label: 'Cámaras', icon: CameraIcon },
+      { to: '/actividad', label: 'Registro de actividad', icon: ActivityIcon },
     ],
   },
   {

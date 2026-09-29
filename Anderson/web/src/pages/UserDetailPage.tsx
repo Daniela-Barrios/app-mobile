@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { UserFormModal, type UserFormValues } from '../components/UserFormModal'
+import { actionsForUser, eventOrigin, ORIGIN_BADGE_CLASS, ORIGIN_LABEL } from '../lib/activity'
 import { useSetBreadcrumbLabel } from '../lib/breadcrumbContext'
 import { TONE_DOT_CLASS, describeEvent } from '../lib/describeEvent'
 import { useAsync } from '../hooks/useAsync'
@@ -25,13 +26,7 @@ async function loadUserDetail(userId: string) {
     zonesRepository.list(),
     eventsRepository.list(),
   ])
-  const tokenIds = new Set(tokens.map((t) => t.id))
-  const actions = events.filter(
-    (e) =>
-      e.entityId === userId ||
-      (e.entityType === 'token' && tokenIds.has(e.entityId)) ||
-      (typeof e.payload?.userId === 'string' && e.payload.userId === userId),
-  )
+  const actions = actionsForUser(userId, events, { tokens, biometrics, accessLogs })
   return { user, biometrics, accessLogs, tokens, zones, actions }
 }
 
@@ -198,19 +193,30 @@ export function UserDetailPage() {
 
       {/* Trazas / acciones */}
       <div className="rounded-xl border border-border bg-surface p-5">
-        <h3 className="mb-3 text-sm font-semibold text-ink-900">Acciones y trazas</h3>
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-ink-900">Acciones y trazas</h3>
+          <Link to={`/actividad/${user.id}`} className="text-xs font-medium text-brand-600 hover:underline">
+            Ver registro de actividad completo →
+          </Link>
+        </div>
         {actions.length === 0 ? (
           <p className="text-sm text-text-muted">Sin actividad registrada.</p>
         ) : (
           <ul className="space-y-3">
             {actions.slice(0, 12).map((event) => {
               const { label, detail, tone } = describeEvent(event, { zones, tokens })
+              const origin = eventOrigin(event)
               return (
                 <li key={event.id} className="flex items-start gap-3 border-b border-border pb-3 last:border-0 last:pb-0">
                   <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${TONE_DOT_CLASS[tone]}`} />
                   <div className="flex-1">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-medium text-ink-900">{label}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-ink-900">{label}</p>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${ORIGIN_BADGE_CLASS[origin]}`}>
+                          {ORIGIN_LABEL[origin]}
+                        </span>
+                      </div>
                       <span className="shrink-0 text-xs text-text-muted">
                         {new Date(event.occurredAt).toLocaleString('es-CO')}
                       </span>
