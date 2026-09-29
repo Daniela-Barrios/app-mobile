@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  fullName  String
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  faceEmbedding FaceEmbedding?
+  totpSecret    TotpSecret?
+  areaAccess    UserAreaAccess[]
+  accessLogs    AccessLog[]
+  consumedTokens ConsumedToken[]
+
+  @@map("users")
+}
+
+model Area {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+
+  userAccess     UserAreaAccess[]
+  accessLogs     AccessLog[]
+  consumedTokens ConsumedToken[]
+
+  @@map("areas")
+}
+
+model UserAreaAccess {
+  id        String   @id @default(uuid())
+  userId    String
+  areaId    String
+  grantedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  area Area @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, areaId])
+  @@map("user_area_access")
+}
+
+// Vector de caracteristicas faciales extraido por el FaceEmbeddingProvider activo.
+// `provider` y `dims` quedan registrados para poder invalidar/migrar embeddings
+// si mas adelante se cambia el proveedor por uno mas robusto.
+model FaceEmbedding {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  vector    Float[]
+  provider  String
+  dims      Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("face_embeddings")
+}
+
+// Secreto base (Base32) del usuario para el motor TOTP. El secreto especifico
+// de cada area se deriva de este (ver totp.service.ts), nunca se genera
+// directamente un token valido para todas las areas.
+model TotpSecret {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  secretBase32 String
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("totp_secrets")
+}
+
+// Registro de consumo de un token valido, para forzar el uso unico (single-use).
+// La combinacion (userId, areaId, timeStep) es unica: si ya existe, el token
+// se rechaza aunque siga dentro de la ventana de +-20s.
+model ConsumedToken {
+  id         String   @id @default(uuid())
+  userId     String
+  areaId     String
+  timeStep   BigInt
+  consumedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  area Area @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, areaId, timeStep])
+  @@map("consumed_tokens")
+}
+
+model AccessLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  areaId    String?
+  method    String // "BIOMETRIC" | "TOTP"
+  success   Boolean
+  reason    String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  area Area? @relation(fields: [areaId], references: [id], onDelete: SetNull)
+
+  @@map("access_logs")
+}
