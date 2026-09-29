@@ -6,6 +6,7 @@ import type { AccessToken, SystemEvent, Zone } from '../types'
 const ACTOR_LABELS: Record<string, string> = {
   'admin-1': 'Ana Restrepo (admin)',
   'device:biometric-simulator': 'Simulador biométrico',
+  'device:kiosk-app-movil': 'Kiosco (app móvil)',
 }
 
 export function actorLabel(actor: string): string {
